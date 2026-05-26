@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:api.anthropic.com)",
+      "Bash(npm --version)",
+      "Bash(git --version)",
+      "Bash(npx --yes create-next-app@latest . --typescript --tailwind --app --no-src-dir --eslint --import-alias \"@/*\" --use-npm --yes)",
+      "Bash(mkdir -p \"C:\\\\Users\\\\skif_\\\\OneDrive\\\\Documents\\\\Alef\\\\.alef-tmp-stash\")",
+      "Bash(mv \"C:\\\\Users\\\\skif_\\\\OneDrive\\\\Documents\\\\Alef\\\\alef-broker-platform\\\\CLAUDE.md\" \"C:\\\\Users\\\\skif_\\\\OneDrive\\\\Documents\\\\Alef\\\\.alef-tmp-stash\\\\CLAUDE.md\")",
+      "Bash(mv \"C:\\\\Users\\\\skif_\\\\OneDrive\\\\Documents\\\\Alef\\\\alef-broker-platform\\\\Docs\" \"C:\\\\Users\\\\skif_\\\\OneDrive\\\\Documents\\\\Alef\\\\.alef-tmp-stash\\\\Docs\")",
+      "Read(//c/Users/skif_/OneDrive/Documents/Alef/**)"
+    ]
+  }
+}
