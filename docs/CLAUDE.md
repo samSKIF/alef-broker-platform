@@ -1,7 +1,5 @@
 # CLAUDE.md — Standing Instructions for Claude Code
 
-@AGENTS.md
-
 **Project:** Alef Broker Platform
 **Owner:** Samir Skif
 **Read this file at the start of EVERY session, before doing anything else.**
