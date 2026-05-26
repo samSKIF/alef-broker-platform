@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · section 1.0 (project setup) is done locally. 6 / 48 Phase-1 items done; 1 blocked (1.0.5 — GitHub remote, needs user). Next: 1.1 design-system foundation, pending the design bundle hand-off (see Blockers).**
+**Phase 1 · section 1.0 (project setup) is done locally; design study complete. 6 / 48 Phase-1 items done; 1 blocked (1.0.5 — GitHub remote, needs user). Next: 1.1 design-system foundation — 1.1.1 unblocked, 1.1.2 soft-blocked on the typography decision (see Blockers).**
 
 ---
 
@@ -133,16 +133,28 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   with `@AGENTS.md` so it loads automatically.
 - **[2026-05-26]** `.claude/` added to `.gitignore`; per-user
   `settings.local.json` untracked.
+- **[2026-05-26]** Design bundle (~21 MB tar.gz) fetched via `curl` (WebFetch
+  exceeded its 10 MB limit). Extracted to `design/` and gitignored — the
+  source files are available locally for inspection, the brand decisions are
+  copied into `docs/PRD.md` §5 / §12 so they remain canonical in version
+  control. Re-fetch URL recorded in WORKLOG.
+- **[2026-05-26] NEEDS DECISION — typography.** Design bundle's `tokens.jsx`
+  uses `Neue Haas Grotesk Display Pro/Text Pro` as the primary head/body
+  family (with Helvetica Neue → Inter → Arial as fallbacks). PRD §5.2 says
+  the brand font is *Helvetica Neue LT Pro*. The design chat transcripts
+  (`design/alef/chats/chat2.md` line 423) state Neue Haas Grotesk
+  "matches the brand guidelines exactly." Per the user prompt, **the brand
+  guidelines PDF wins** — but we cannot read the PDF directly without
+  pdftoppm. Awaiting Samir's confirmation from the PDF; until then PRD §5.2
+  is unchanged.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
 - **[2026-05-26] 1.0.5 — GitHub remote** — needs Samir to create the
   GitHub repository, then we push. Step-by-step in the WORKLOG.
-- **[2026-05-26] Design bundle** — `WebFetch` to
-  `https://api.anthropic.com/v1/design/h/qsGdxUMO7L39UaHfr9SZGA` returned HTTP
-  404; the Claude Design endpoint is not reachable from Claude Code's WebFetch.
-  We need Samir to either: (a) share the design files (HTMLs + `store.jsx` +
-  brand-guidelines PDF) into the repo (e.g. `/design/`), or (b) paste the
-  contents of the readme + brand guidelines + screen list directly so the
-  design study can finish before 1.1.
+- **[2026-05-26] Typography (PRD §5.2 vs design)** — flagged above under
+  DISCOVERED ITEMS; soft-blocks 1.1.2 (typography config). Either Samir
+  confirms the brand-guidelines PDF says **Neue Haas Grotesk** (then we
+  update PRD §5.2), or he confirms **Helvetica Neue LT Pro** (then we
+  override the design's tokens.jsx during 1.1.2).

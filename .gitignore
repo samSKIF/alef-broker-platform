@@ -40,6 +40,10 @@ yarn-error.log*
 # claude code per-user state
 .claude/
 
+# claude design handoff bundle — large (21 MB: PDF + images + bundled HTML).
+# Re-fetch as needed; the brand decisions live in docs/PRD.md §5 and §12.
+design/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

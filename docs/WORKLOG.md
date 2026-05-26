@@ -132,3 +132,118 @@ sessions. Keep entries concise but complete.
      vulnerabilities" — these are inside the create-next-app baseline tree.
      I haven't run `npm audit fix` (avoiding speculative changes). Flag if
      you'd like me to look at them in a later session.
+
+### [2026-05-26 23:30] — Design bundle fetched and studied
+- **Phase / Plan item:** Phase 1 · 1.0 (design study, prep for 1.1)
+- **Status:** DONE — study complete. One typography conflict surfaced; awaiting Samir's call before 1.1.2.
+- **What I did:**
+  1. Samir provided a new design URL
+     (`https://api.anthropic.com/v1/design/h/kS6ADuMaFiolE2B6tvTPAQ`).
+     WebFetch failed with `maxContentLength size of 10485760 exceeded` —
+     the bundle is ~21 MB (gzipped: ~20 MB).
+  2. Fell back to `curl` via Bash; downloaded 21,246,691 bytes; HTTP 200.
+     Bundle is a gzipped **tar archive**, not an HTML viewer page.
+  3. Decompressed (`gunzip`) and extracted (`tar -xf`) to `design/alef/`.
+     Total 54 entries: README + 3 chats + 22 JSX source files + assets
+     (brand-guidelines PDF, Brand Colors.xlsx, 8 images, 2 logos) + the
+     bundled `Alef Broker.html` (the prototype viewer).
+  4. Read the README, all 3 chat transcripts (chat3 is empty), `tokens.jsx`,
+     `store.jsx`. Enumerated every screen function across `screens-*.jsx`
+     and every admin screen across `admin-*.jsx`.
+  5. Could **not** read the brand-guidelines PDF directly: the `Read` tool's
+     PDF path requires `pdftoppm` (poppler-utils) which is not installed.
+     Used the chat-transcript and `tokens.jsx` as proxy evidence.
+  6. Added `design/` to `.gitignore`. Brand decisions live in `docs/PRD.md`;
+     re-fetch URL is in this WORKLOG so the bundle is reproducible.
+- **Files changed:**
+  - Created (gitignored): `design/alef/**` (README + chats + project sources
+    + assets + uploads). Not committed.
+  - Modified: `.gitignore` (added `design/`), `docs/PROJECT_PLAN.md`
+    (cleared design-bundle blocker, added typography NEEDS DECISION,
+    updated CURRENT STATUS), `docs/PRD.md` §12 (decisions log entries),
+    `docs/WORKLOG.md` (this entry).
+- **Decisions made:**
+  - **Design bundle is gitignored.** Source files are small but the PDF
+    alone is 12 MB and most images will be re-introduced under `/public`
+    in 1.1.3. Keeping `design/` local-only avoids repo bloat; the URL is
+    in this log so future sessions can re-fetch.
+  - **Did NOT silently resolve the typography conflict.** Per the user's
+    instructions: "do not silently pick one. The brand guidelines PDF wins
+    any conflict." PRD §5.2 stays as-is until Samir confirms from the PDF.
+- **Findings — bundle structure:**
+  - **Broker app screens (14)** in `design/alef/project/src/`:
+    `SplashScreen` (screens-splash.jsx); `OnboardWelcome`, `OnboardName`,
+    `OnboardComplete`, `HomeDashboard`, `Academy` (screens-a.jsx);
+    `ProjectsList`, `ProjectDetail`, `BrochureShare` (screens-b.jsx);
+    `Booking`, `BookingConfirmation`, `ReminderNotif`, `ActivityDashboard`
+    (screens-c.jsx); `AskAlefChat` + `AskAlefFAB` + `AskAlefWidget`
+    (screens-ai.jsx).
+  - **Admin console screens (6 + 1 demo)** in `design/alef/project/src/`:
+    `AdminOverview`, `AdminBrokers`, `AdminProjects`, `AdminAcademy`,
+    `AdminCampaigns`, `AdminPush`, plus `RoundTrip` (a wiring-demo artboard,
+    not a real screen).
+  - **Shared primitives** (`components.jsx`): `Phone`, `StatusBar`,
+    `HomeIndicator`, `AppHeader`, `TabBar`, `Card`, `Chip`, `Button`,
+    `Progress`, `TierBadge`, `CommunityArt`, `Avatar`.
+  - **Admin primitives** (`admin-layout.jsx`): `AdminShell`, `AdminSidebar`,
+    `AdminTopbar`, `AdSection`, `AdCard`, `AdBtn`, `AdField`, `AdInput`,
+    `AdUpload`, `AdToggle`, `AdPill`.
+  - **`store.jsx` data shapes** map cleanly to PRD §8 (field names differ:
+    design uses camelCase `loc/from/aiIndexed/pts/eng/lastActive`; PRD uses
+    snake_case for Postgres — `location/price_from/ai_indexed/points/
+    engagement_score/last_active`). One small architectural difference:
+    design stores aggregated counts (visits/shares/modules) inline on each
+    broker; PRD's `activity` table is the cleaner source of truth.
+  - **Seed data we'll reuse for 1.2.4:** 4 projects (Hayyan, Al Mamsha,
+    Olfah, Palace Residences — all with `aiIndexed:true`), 5 campaigns,
+    7 modules (5 online + 2 live), 8 brokers (Layla as the demo account),
+    1 notification, weekly rollup, funnel.
+- **Findings — brand palette: MATCH ✓.** Every hex in `tokens.jsx`
+  matches PRD §5.1 exactly: `ink #333F48`, `card #FFFFFF`, `bg #F7F7F7`,
+  `accent #B6735C`, `accent2 #9A5E4A`, `tint #F1ECD6`, `balance #8797AF`,
+  `possibilities #988FC5`, `line #E5E7EA`, and tier colours `bronze
+  #B07A5C / silver #A8AEB4 / gold #C9A464 / preferred #333F48`. The
+  design adds (not in PRD) text-scale ink2/3/4 (`#5C6770 / #8A929B /
+  #B8BDC2`), `inkOnAccent #FFFFFF`, and utility `success #5C8A6B` +
+  `olive #7A8470`. None of these conflict with PRD §5 — they are
+  additions worth lifting into the Tailwind theme in 1.1.1.
+- **Findings — typography: MISMATCH ⚠️ (NEEDS DECISION).**
+  - PRD §5.2: Latin = *Helvetica Neue LT Pro* (brand font), fallback
+    `"Helvetica Neue", Inter, Helvetica, Arial, sans-serif`.
+  - Design `tokens.jsx`: head = `"Neue Haas Grotesk Display Pro",
+    "Helvetica Neue", "Inter", "Helvetica", Arial, sans-serif`; body =
+    `"Neue Haas Grotesk Text Pro", "Helvetica Neue", "Inter", "Helvetica",
+    Arial, sans-serif`.
+  - Design `chat2.md:423` says the switch to Neue Haas Grotesk was made
+    "matching the brand guidelines exactly."
+  - Arabic + Mono families agree across PRD and design (GE SS Two / Tajawal /
+    Noto Naskh Arabic; JetBrains Mono).
+- **Tested:** All file reads succeeded. Bundle integrity verified by
+  `tar -tf` listing 54 entries with the expected paths. Design `tokens.jsx`
+  palette hex-codes were diff'd against PRD §5.1 — exact match.
+- **Next:** Once Samir confirms typography, kick off section **1.1** —
+  start at 1.1.1 (Tailwind theme tokens for the palette: all the brand
+  colors above + tier rail + the design's text-scale additions) and 1.1.3
+  (move `logo-light.png` and `logo-dark.png` from
+  `design/alef/project/assets/` into `/public`). Hold 1.1.2 (typography)
+  until typography is settled.
+- **Notes for the user:**
+  1. **Typography decision needed.** Please check the brand-guidelines PDF
+     (`design/alef/project/assets/ALEF-Brand-Guidelines-Latest.pdf` on
+     your machine, or your original copy) and tell me which is correct:
+     - **(a) Neue Haas Grotesk Display Pro / Text Pro** — matches the
+       design bundle's `tokens.jsx`; the design assistant said this
+       reflects the PDF.
+     - **(b) Helvetica Neue LT Pro** — what PRD §5.2 currently says.
+     Whichever wins, the other moves to the fallback chain. I'll update
+     PRD §5.2 + Tailwind config accordingly in 1.1.2.
+  2. **GitHub remote is still pending** — see the first WORKLOG entry's
+     "Notes for the user" item 1 for the exact steps. No change.
+  3. **The design bundle is in `design/` locally but not committed.** If
+     you want it in version control, say so and I'll un-ignore a curated
+     subset (sources + brand spreadsheet, ~1 MB) while keeping the PDF and
+     large images out.
+  4. **Couldn't read the PDF directly** — `pdftoppm` isn't installed on
+     this machine. If you'd like me to verify brand details from the PDF
+     in future sessions, install poppler (`scoop install poppler` or
+     similar) or extract the text and paste it.
