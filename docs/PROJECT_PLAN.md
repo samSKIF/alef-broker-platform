@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · section 1.0 (project setup) is done locally; design study complete. 6 / 48 Phase-1 items done; 1 blocked (1.0.5 — GitHub remote, needs user). Next: 1.1 design-system foundation — 1.1.1 unblocked, 1.1.2 soft-blocked on the typography decision (see Blockers).**
+**Phase 1 · section 1.0 (project setup) is done locally; design study complete; typography decision resolved (Helvetica Neue LT Pro per PRD §5.2). 6 / 48 Phase-1 items done; 1 blocked (1.0.5 — GitHub remote, needs user). Next: 1.1 design-system foundation — fully unblocked, ready to start when Samir says go.**
 
 ---
 
@@ -138,23 +138,13 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   source files are available locally for inspection, the brand decisions are
   copied into `docs/PRD.md` §5 / §12 so they remain canonical in version
   control. Re-fetch URL recorded in WORKLOG.
-- **[2026-05-26] NEEDS DECISION — typography.** Design bundle's `tokens.jsx`
-  uses `Neue Haas Grotesk Display Pro/Text Pro` as the primary head/body
-  family (with Helvetica Neue → Inter → Arial as fallbacks). PRD §5.2 says
-  the brand font is *Helvetica Neue LT Pro*. The design chat transcripts
-  (`design/alef/chats/chat2.md` line 423) state Neue Haas Grotesk
-  "matches the brand guidelines exactly." Per the user prompt, **the brand
-  guidelines PDF wins** — but we cannot read the PDF directly without
-  pdftoppm. Awaiting Samir's confirmation from the PDF; until then PRD §5.2
-  is unchanged.
+- **[2026-05-26] Typography decision — RESOLVED.** Samir confirmed against the
+  brand-guidelines PDF: primary Latin family is **Helvetica Neue LT Pro**
+  (PRD §5.2 was correct). Design `tokens.jsx`'s use of Neue Haas Grotesk
+  will be overridden when we configure Tailwind typography in 1.1.2.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
 - **[2026-05-26] 1.0.5 — GitHub remote** — needs Samir to create the
   GitHub repository, then we push. Step-by-step in the WORKLOG.
-- **[2026-05-26] Typography (PRD §5.2 vs design)** — flagged above under
-  DISCOVERED ITEMS; soft-blocks 1.1.2 (typography config). Either Samir
-  confirms the brand-guidelines PDF says **Neue Haas Grotesk** (then we
-  update PRD §5.2), or he confirms **Helvetica Neue LT Pro** (then we
-  override the design's tokens.jsx during 1.1.2).

@@ -247,3 +247,24 @@ sessions. Keep entries concise but complete.
      this machine. If you'd like me to verify brand details from the PDF
      in future sessions, install poppler (`scoop install poppler` or
      similar) or extract the text and paste it.
+
+### [2026-05-26 23:35] — Typography decision resolved
+- **Phase / Plan item:** Phase 1 · pre-1.1 (decision log)
+- **Status:** DONE
+- **What I did:** Samir verified the brand-guidelines PDF directly and
+  confirmed the primary Latin family is **Helvetica Neue LT Pro** (i.e.
+  PRD §5.2 was correct, the design bundle's `tokens.jsx` is wrong on this
+  point). Updated `docs/PRD.md` §12 (resolved the OPEN decision) and
+  `docs/PROJECT_PLAN.md` (replaced the NEEDS DECISION + soft-blocker with
+  a RESOLVED note; bumped CURRENT STATUS).
+- **Files changed:** `docs/PRD.md`, `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`.
+- **Decisions made:** Primary Latin = Helvetica Neue LT Pro. Fallback chain
+  per PRD §5.2 unchanged. When we wire Tailwind typography in 1.1.2, override
+  the design's tokens.jsx — do **not** import Neue Haas Grotesk.
+- **Tested:** n/a (decision-only change).
+- **Next:** Section 1.1 is now fully unblocked. Awaiting Samir's go-ahead
+  to start (per the standing instruction to stop after 1.0).
+- **Notes for the user:** Two items remain on your side from the prior
+  entry: (1) the GitHub remote (1.0.5); (2) deciding whether to commit a
+  curated subset of `design/` (currently gitignored). Neither blocks the
+  start of 1.1.

@@ -516,13 +516,12 @@ analytics, native app wrappers, AWS migration for video/scale.
   screens enumerated and confirmed to map to PRD §6/§7. Brand **palette**
   matches PRD §5.1 exactly (every hex code). All 4 communities in §6.8 are
   in the seed (Hayyan, Al Mamsha, Olfah, Palace Residences, all `aiIndexed`).
-- _[OPEN — DECISION] Typography (PRD §5.2 vs design tokens.jsx)._ Design
-  bundle's `tokens.jsx` and `chat2.md:423` state the brand primary family is
-  **Neue Haas Grotesk Display Pro / Text Pro** ("matching the brand
-  guidelines exactly"), with Helvetica Neue → Inter → Arial as fallbacks.
-  PRD §5.2 currently says *Helvetica Neue LT Pro*. The brand-guidelines PDF
-  wins; not yet verified directly (no `pdftoppm` on this machine). Hold
-  1.1.2 until Samir confirms.
+- **[26 May 2026]** Typography decision **resolved** — primary Latin family
+  is **Helvetica Neue LT Pro** (confirmed by Samir against the brand-guidelines
+  PDF). PRD §5.2 is correct as written. The design bundle's `tokens.jsx` use
+  of Neue Haas Grotesk Display/Text Pro will be overridden in 1.1.2; the
+  fallback stack stays `"Helvetica Neue", Inter, Helvetica, Arial, sans-serif`
+  per PRD §5.2.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at launch.
 
