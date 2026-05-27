@@ -13,6 +13,27 @@ export async function listPublishedModules(): Promise<Module[]> {
   return data ?? [];
 }
 
+// Admin variant — includes drafts.
+export async function listAllModules(): Promise<Module[]> {
+  const sb = createSupabaseServerClient();
+  const { data } = await sb
+    .from("modules")
+    .select("*")
+    .order("kind")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+export async function getModuleById(id: string): Promise<Module | null> {
+  const sb = createSupabaseServerClient();
+  const { data } = await sb
+    .from("modules")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}
+
 export async function listModulesForProject(projectId: string): Promise<Module[]> {
   const sb = createSupabaseServerClient();
   const { data } = await sb

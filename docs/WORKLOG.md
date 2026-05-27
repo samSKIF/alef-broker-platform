@@ -943,3 +943,148 @@ sessions. Keep entries concise but complete.
   5. **Ready for 1.5?** Say "start 1.5" — that's the admin console (six
      authoring screens + the new AI Training screen). Reuses the
      `<AdminShell>` we already built in 1.1.5.
+
+### [2026-05-27 18:00] — Section 1.5 done (Admin console, all 8 items)
+- **Phase / Plan item:** Phase 1 · 1.5 Admin console (1.5.1 – 1.5.8)
+- **Status:** DONE
+- **What I did:**
+  1. **1.5.1 — Admin shell routing.** Added `ai-training` to
+     `ADMIN_ROUTES` in `<AdminShell>`. Built `app/(admin)/admin/layout.tsx`
+     as a thin client wrapper that reads `usePathname()` and passes
+     `route` to the shell so the sidebar's active item tracks the URL
+     without each page needing to declare itself.
+  2. **1.5.2 — Overview / Metrics** (`/admin`). New
+     `getAdminOverview()` query aggregates `brokers` + `activity` into:
+     KPIs (active brokers, visits, shares, avg engagement), a 7-day
+     multi-series bar chart (`<WeeklyChart>`), a 4-band engagement
+     distribution (`<EngagementDistribution>`), the 5-stage funnel
+     (`<Funnel>`), and a top-5 leaderboard (`<Leaderboard>`). Charts
+     are pure SVG, no library. Funnel synthesises the conversion tail
+     (tour / offer / transaction) from visits via documented ratios
+     (PRD §12) — real per-stage activity in 1.6 will start replacing
+     the fallback.
+  3. **1.5.3 — Brokers roster + drill-down.** `listAllBrokers()`
+     returns brokers joined to per-broker activity counts +
+     last-active timestamp. `/admin/brokers` shows a sortable-looking
+     (Phase 2) table with engagement minibars; `/admin/brokers/[id]`
+     mirrors the broker-side `<EngagementRing>` + breakdown bars +
+     activity timeline.
+  4. **1.5.4 — Projects authoring** with real uploads.
+     `/admin/projects` lists (incl. drafts), `/admin/projects/new` and
+     `/admin/projects/[id]` host the form. `<ProjectAdminForm>` is a
+     real working FormData submission: name/location/tagline/units/
+     price/status text inputs + cover image / video / brochure-PDF
+     uploads to Supabase Storage (`uploadToStorage` helper in
+     `/lib/supabase/upload.ts`) + featured / published / ai_indexed
+     switches. Delete action wired inline.
+  5. **1.5.5 — Academy authoring + quiz builder.** Kind toggle
+     swaps in online (duration) vs live (when / location / seats)
+     fields. `<QuizBuilder>` is a client component that maintains an
+     array of `{q, options[], correct}` with add/remove for questions
+     and options + tap-to-mark-correct on each option; emits the full
+     JSON via a hidden form input picked up by `upsertModule`. Video
+     upload deferred to Phase 2 — PRD §8.3's schema lacks a
+     `modules.video_url` column; documented inline in the form and in
+     PRD §12.
+  6. **1.5.6 — Campaigns authoring + live preview.**
+     `<CampaignAdminForm>` is a controlled client form whose draft
+     state feeds a live preview rendered with the same
+     `<CampaignCard>` the broker app uses. Supports both image-led
+     and the special `commission` card style. Tag / title / subtitle
+     / image / kind / link_target / schedule + published toggle.
+  7. **1.5.7 — Push notifications composer.** Audience targeting per
+     PRD §8.5: radio between `all` / `tier:X` / `engagement:band` /
+     `project:id` with the appropriate child select. Live mini phone
+     mock (`<PhoneLockScreenPreview>`) renders the lock-screen banner
+     in real time. Submit writes a notifications row with
+     `sent = true / sent_at = now()`; broker app's bell badge + feed
+     pick it up immediately. Real device push is Phase 2.
+  8. **1.5.8 — AI Training.** `<AiInstructionsEditor>` edits the
+     singleton `ai_config` row (instructions textarea, model select,
+     temperature + max_output_tokens sliders) with a "✓ Saved"
+     toast. `<AiSourcesList>` lists all `ai_sources` with inline
+     enabled-toggle + delete. `/admin/ai-training/source/new` and
+     `.../[id]` host `<AiSourceForm>` — title / kind / project_id /
+     content text + optional file upload. PDF-to-text auto-extraction
+     deferred to Phase 2 (operator pastes extracted text into the
+     content box).
+  9. **Server actions added.** `features/projects/actions.ts`
+     (upsertProject + deleteProject), `features/training/actions.ts`
+     (upsertModule + deleteModule), `features/campaigns/actions.ts`
+     (upsertCampaign + deleteCampaign),
+     `features/notifications/actions.ts` (sendNotification),
+     `features/ask-alef/actions.ts` (updateAiConfig + upsertAiSource +
+     toggleAiSource + deleteAiSource). All cause appropriate
+     `revalidatePath` calls so the broker app sees changes immediately.
+  10. **Queries added.** `listAllProjects` / `getProjectById`
+      (already), `listAllModules` / `getModuleById`,
+      `listAllCampaigns` / `getCampaignById`, `listAllNotifications`,
+      `listAllBrokers` (admin roster joined to activity),
+      `getAdminOverview` (the Overview aggregation).
+  11. **Convention.** Inline `'use server'` actions inside server
+      components (delete buttons embedded in admin list rows) work in
+      Next.js 16; we use the pattern across all the per-row delete
+      forms.
+- **Files changed:**
+  - **Created (pages, 17):** `app/(admin)/admin/{layout,page}.tsx`,
+    `app/(admin)/admin/brokers/{page.tsx,[id]/page.tsx}`,
+    `app/(admin)/admin/projects/{page.tsx,new/page.tsx,[id]/page.tsx}`,
+    `app/(admin)/admin/academy/{page.tsx,new/page.tsx,[id]/page.tsx}`,
+    `app/(admin)/admin/campaigns/{page.tsx,new/page.tsx,[id]/page.tsx}`,
+    `app/(admin)/admin/push/page.tsx`,
+    `app/(admin)/admin/ai-training/{page.tsx,source/new/page.tsx,source/[id]/page.tsx}`.
+  - **Created (admin components):**
+    `features/engagement/components/{Kpi,WeeklyChart,EngagementDistribution,Funnel,Leaderboard}.tsx`,
+    `features/brokers/components/BrokerRosterTable.tsx`,
+    `features/projects/components/{ProjectAdminForm,ProjectAdminRow}.tsx`,
+    `features/training/components/{ModuleAdminForm,ModuleAdminRow,QuizBuilder}.tsx`,
+    `features/campaigns/components/{CampaignAdminForm,CampaignAdminRow}.tsx`,
+    `features/notifications/components/NotificationComposer.tsx`,
+    `features/ask-alef/components/{AiInstructionsEditor,AiSourceForm,AiSourcesList}.tsx`.
+  - **Created (data):**
+    `features/{projects,training,campaigns,notifications,ask-alef}/actions.ts`,
+    `lib/supabase/upload.ts`.
+  - **Modified:**
+    `components/shared/AdminShell.tsx` (added ai-training route),
+    `features/{brokers,projects,training,campaigns,notifications,engagement,ask-alef}/{queries,types,index}.ts`,
+    `docs/PRD.md` §12, `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`.
+  - **Removed:** `app/(admin)/.gitkeep`.
+- **Decisions made:**
+  - **Admin layout is `'use client'`** so it can read `usePathname()`
+    and pass the active `route` to `<AdminShell>`. Pages stay server.
+  - **Funnel synthesis** for the conversion tail until real
+    `tour_completed` / offer / transaction activity rows exist.
+  - **Module video upload deferred** — PRD §8.3 has no `video_url`
+    column; Phase 2 adds it.
+  - **PDF-to-text auto-extraction deferred** — Phase 2.
+  - **Inline server-action delete forms** in admin row components
+    are the chosen pattern for per-row destructive actions.
+  - **Audience-targeting wire format** for notifications stays the
+    string convention in PRD §8.5.
+- **Tested:**
+  - `npm run build` → PASS — **35 routes** (17 admin + 17 broker +
+    `_not-found`); 5 static, 30 dynamic.
+  - `npm run lint` → PASS — 0 errors / 0 warnings.
+  - End-to-end form submission NOT walked manually this turn; relying
+    on build + the consistent server-action pattern.
+- **Next:** Section **1.6 — The connection (admin ↔ broker)**. Most of
+  the round-trip is already wired by the `revalidatePath` calls in
+  every admin action — 1.6 mostly verifies the loop, adds Supabase
+  Realtime for live notification fan-out (1.6.4), and end-to-end smoke
+  tests.
+- **Notes for the user:**
+  1. **Open `/admin`** in a desktop browser to see the new admin
+     console. Sidebar nav between Overview / Brokers / Projects /
+     Academy / Campaigns / Push / AI Training.
+  2. **Try the round-trip.** Edit Hayyan's tagline in `/admin/projects/hayyan`,
+     hit Save → reload `/projects/hayyan` in the broker app and the
+     new tagline appears.
+  3. **Try sending a push.** Compose one at `/admin/push` → it shows
+     up immediately at `/notifications` in the broker app, and the
+     bell badge increments.
+  4. **Try editing the AI.** `/admin/ai-training` — edit instructions
+     or add a source. Next chat at `/ask-alef` picks it up.
+  5. **Cost reminder.** The Supabase project still bills $10/mo while
+     active; pause it from the dashboard when not demoing.
+  6. **Ready for 1.6?** Say "start 1.6" — verify the connection +
+     wire Supabase Realtime for live notification fan-out.

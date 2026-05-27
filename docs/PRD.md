@@ -653,6 +653,25 @@ analytics, native app wrappers, AWS migration for video/scale.
   instructions, model knobs, and the `ai_sources` library (add / edit /
   toggle / delete; optional file upload that extracts text into a
   source row). Added to PROJECT_PLAN under section 1.5.
+- **[27 May 2026]** **Admin Overview funnel synthesis.** The activity →
+  transaction funnel renders real per-stage counts for the activity
+  types we capture today (`brochure_shared`, `visit_booked`,
+  `tour_completed`). When `tour_completed` is empty it falls back to
+  `0.82 × visits`. Offers / transactions are always synthesised from
+  visits via the design's SEED_FUNNEL ratios (26 % / 10 %). When real
+  activity rows of those types start landing (1.6 round-trip) the
+  fallback decays gracefully.
+- **[27 May 2026]** **Module video upload deferred.** PRD §7.4 lists
+  "video upload" but PRD §8.3's `modules` schema has no `video_url`
+  column. Phase 2 owns the schema migration + real upload wire.
+- **[27 May 2026]** **AI Training PDF-to-text auto-extraction deferred.**
+  1.5.8 accepts a brochure PDF upload (stored at `ai_sources.file_url`)
+  but extracting its text into `ai_sources.content` is Phase 2; the
+  operator pastes the extracted text by hand for Phase 1.
+- **[27 May 2026]** **Admin layout is a thin client wrapper.**
+  `app/(admin)/admin/layout.tsx` is `'use client'` so it can call
+  `usePathname` and pass `route` to `<AdminShell>`. Pages stay server
+  components; the client touchpoint is the layout only.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at
   launch — Phase 1 seed uses all 4 indexed projects from the seed

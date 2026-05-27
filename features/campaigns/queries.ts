@@ -14,3 +14,23 @@ export async function listPublishedCampaigns(): Promise<Campaign[]> {
     .order("created_at", { ascending: false });
   return data ?? [];
 }
+
+// Admin variant — includes drafts.
+export async function listAllCampaigns(): Promise<Campaign[]> {
+  const sb = createSupabaseServerClient();
+  const { data } = await sb
+    .from("campaigns")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}
+
+export async function getCampaignById(id: string): Promise<Campaign | null> {
+  const sb = createSupabaseServerClient();
+  const { data } = await sb
+    .from("campaigns")
+    .select("*")
+    .eq("id", id)
+    .maybeSingle();
+  return data;
+}

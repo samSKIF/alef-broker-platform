@@ -50,6 +50,13 @@ export const ADMIN_ROUTES = [
     icon: "bell" as IconName,
     sub: "Compose · target · schedule",
   },
+  {
+    id: "ai-training",
+    href: "/admin/ai-training",
+    label: "AI Training",
+    icon: "sparkle" as IconName,
+    sub: "Edit the Ask Alef assistant's instructions and knowledge",
+  },
 ] as const;
 
 export type AdminRouteId = (typeof ADMIN_ROUTES)[number]["id"];

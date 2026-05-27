@@ -22,3 +22,13 @@ export async function countSentNotifications(): Promise<number> {
     .eq("sent", true);
   return count ?? 0;
 }
+
+// Admin variant — every notification incl. drafts, newest first.
+export async function listAllNotifications(): Promise<Notification[]> {
+  const sb = createSupabaseServerClient();
+  const { data } = await sb
+    .from("notifications")
+    .select("*")
+    .order("created_at", { ascending: false });
+  return data ?? [];
+}

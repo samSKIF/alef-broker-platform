@@ -20,3 +20,45 @@ export type ActivityBreakdown = {
   modulesCompleted: number;
   total: number;
 };
+
+export type WeeklyRollup = {
+  day: string; // ISO yyyy-mm-dd
+  label: string; // "Mon", "Tue"…
+  visits: number;
+  brochures: number;
+  modules: number;
+};
+
+export type FunnelStage = {
+  stage: string;
+  value: number;
+  color: string;
+};
+
+export type EngagementDistribution = {
+  highly: number;
+  engaged: number;
+  atRisk: number;
+  dormant: number;
+};
+
+export type LeaderboardBroker = {
+  id: string;
+  name: string;
+  brokerage: string | null;
+  tier: string;
+  points: number;
+  engagement_score: number;
+};
+
+export type AdminOverview = {
+  activeBrokers: number;
+  totalVisits: number;
+  totalShares: number;
+  totalModules: number;
+  avgEngagement: number;
+  weekly: WeeklyRollup[];
+  distribution: EngagementDistribution;
+  funnel: FunnelStage[];
+  topBrokers: LeaderboardBroker[];
+};

@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.4 done. Ask Alef AI assistant live: config-driven (instructions + knowledge sources stored in new `ai_config` / `ai_sources` tables, edited later from the admin AI Training screen 1.5.8). `/api/ask-alef` streams OpenAI chat completions; `/ask-alef` chat surface (avatar with thinking-aura, message bubbles, streaming, suggestion chips) is reachable from a floating FAB on Home. OpenAI key validated. Also: `/welcome` now has a "Demo · Continue as Layla Hassan" form button (server action) that signs in as the pre-seeded broker b1 so the CEO demo opens with rich activity. 39 / 49 Phase-1 items done (1 new sub-item added at 1.5.8). Build + lint clean. Next: section **1.5 — Admin console (desktop)**.**
+**Phase 1 · sections 1.0–1.5 done. Admin console live at `/admin/*`: Overview (KPIs / weekly chart / engagement distribution / activity-to-transaction funnel / top-broker leaderboard), Brokers roster + drill-down, Projects authoring with real Storage uploads, Academy authoring + quiz builder, Campaigns authoring with live broker-card preview, Push composer with phone preview + audience targeting, and AI Training (edit ai_config instructions/model knobs + manage ai_sources). 17 admin routes; 35 total. Build + lint clean. 47 / 49 Phase-1 items done. Next: section **1.6 — The connection (admin ↔ broker)** — verify the live round-trip + smoke-test.**
 
 ---
 
@@ -73,14 +73,14 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.4.6 Floating "Ask Alef AI" button on `/home` — `AskAlefFAB` pill above the tab bar with rotating-aura avatar and copper halo; links to `/ask-alef`.
 
 ### 1.5 — Admin console (desktop)
-- [ ] 1.5.1 Admin shell — navy sidebar, topbar, routing between the admin screens
-- [ ] 1.5.2 Overview / Metrics — KPIs, weekly chart, distribution, funnel, leaderboard
-- [ ] 1.5.3 Brokers — roster table + drill-down panel
-- [ ] 1.5.4 Projects — list + REAL authoring form → writes `projects` + Storage
-- [ ] 1.5.5 Academy — list + REAL create-module form + quiz builder → writes `modules`
-- [ ] 1.5.6 Campaigns — list + REAL create form + live preview → writes `campaigns`
-- [ ] 1.5.7 Push notifications — REAL compose form + targeting + preview → writes `notifications`
-- [ ] 1.5.8 **AI Training** — edit the AI's system instructions, model knobs (`gpt-4o-mini` + temperature + max-tokens), and the knowledge-source library (add / edit / toggle / delete the brochure-text entries in `ai_sources`). Optional: file upload that extracts text into a source row. Added 2026-05-27 alongside the config-driven AI in 1.4.
+- [x] 1.5.1 Admin shell + routing — `app/(admin)/admin/layout.tsx` derives the active sidebar item from `usePathname` and renders `<AdminShell>`. Added `ai-training` to `ADMIN_ROUTES`.
+- [x] 1.5.2 Overview / Metrics — `getAdminOverview` aggregates brokers + activity into 4 KPIs, a 7-day multi-series bar chart, a 4-band engagement distribution, the 5-stage activity→transaction funnel (Phase 1 synthesises the tour/offer/transaction tail from visit counts — documented in PRD §12), and a top-5 leaderboard. New shared chart components in `/features/engagement/components`.
+- [x] 1.5.3 Brokers roster + drill-down — `/admin/brokers` table with engagement-mini-bar + per-broker visit/share/module counts + last-active. `/admin/brokers/[id]` drill-down reuses the EngagementRing and adds an activity timeline that joins project + module names.
+- [x] 1.5.4 Projects authoring — `/admin/projects` list, `/admin/projects/new`, `/admin/projects/[id]`. `<ProjectAdminForm>` is a real working form: name/location/tagline/units/price/status + cover image / video / brochure-PDF upload to Supabase Storage (`uploadToStorage` helper in `/lib/supabase/upload.ts`) + featured/published/ai-indexed toggles + delete action.
+- [x] 1.5.5 Academy authoring + quiz builder — `/admin/academy/{,new,[id]}`. `<ModuleAdminForm>` toggles online/live shape, links to a project, sets tier/points/duration/seats/location, and embeds `<QuizBuilder>` (client component that manages an array of `{q, options[], correct}` and emits hidden JSON for the action). Video upload deferred to Phase 2 — needs a `modules.video_url` column (PRD §8.3 doesn't have one); documented.
+- [x] 1.5.6 Campaigns authoring + live preview — `/admin/campaigns/{,new,[id]}`. `<CampaignAdminForm>` is a controlled client form whose draft state feeds a live preview rendered with the same broker-side `<CampaignCard>`. Supports both image-led and the special "commission" card style.
+- [x] 1.5.7 Push notifications — `/admin/push` composer + history. Audience targeting encoded per PRD §8.5 (`all` / `tier:T` / `engagement:band` / `project:id`). Live phone-lock-screen preview. "Send" writes a `notifications` row with `sent=true`; the broker app's bell badge + feed pick it up immediately (Realtime push wire is Phase 2 / PROJECT_PLAN 2.2).
+- [x] 1.5.8 AI Training — `/admin/ai-training` edits the singleton `ai_config` row (instructions textarea + model select + temperature/max-tokens sliders) and manages the `ai_sources` library (`/admin/ai-training/source/{new,[id]}` + inline enabled toggle + delete). PDF-to-text auto-extraction is Phase 2; for Phase 1 the file is uploaded and stored at `file_url` while the operator pastes extracted text into `content`.
 
 ### 1.6 — The connection (admin ↔ broker)
 - [ ] 1.6.1 Publish project (admin) → appears in broker Projects + AI sources
@@ -202,13 +202,28 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   the CEO demo opens with a populated dashboard without walking through
   onboarding. Replaces the previously-broken "Already enrolled? Sign in"
   link.
+- **[2026-05-27] Funnel synthesis (admin Overview).** The activity →
+  transaction funnel renders real counts for `brochure_shared` and
+  `visit_booked`; the tail (`tour_completed` / offers / transactions)
+  is synthesised from the visit count via documented conversion ratios
+  (82% / 26% / 10%). When real activity rows of those types start
+  landing (1.6 round-trip) the synthesised fallback drops away.
+- **[2026-05-27] Module video upload deferred.** PRD §7.4 lists "video
+  upload" as a module-authoring field but PRD §8.3's schema has no
+  `modules.video_url` column. The admin form documents the deferral
+  inline; Phase 2 adds the column + a real upload wire.
+- **[2026-05-27] PDF-to-text auto-extraction deferred.** AI Training
+  (1.5.8) accepts a brochure PDF upload (stored at
+  `ai_sources.file_url`) but extracting its text into
+  `ai_sources.content` is Phase 2. For Phase 1 the operator pastes the
+  extracted text by hand.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- _(none active for 1.5)_
+- _(none active for 1.6)_
 
-### Outstanding follow-ups (do NOT block 1.5)
+### Outstanding follow-ups (do NOT block 1.6)
 - **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** All public tables (now 8 with `ai_config` + `ai_sources`) have Row Level Security **disabled**. Intentional POC posture per PRD §11; remediation owned by Phase 2 item 2.7. Note `ai_config` and `ai_sources` need particular care since they store the system prompt — must be admin-only writable in production.
 - **[2026-05-27] Fresh-onboarded brokers see empty dashboards — RESOLVED via the new "Demo · Continue as Layla" affordance on /welcome.** Real-onboarded brokers still hit the sparse state by design; that's fine for actual usage.
 - **[2026-05-27] Engagement-score recompute.** The Activity dashboard reads the **stored** `engagement_score` from the brokers row. New activity doesn't change it until Phase 2 wires the live composite-score recompute (PRD §8.8).
