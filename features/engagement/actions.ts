@@ -1,5 +1,6 @@
 "use server";
 
+import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Json } from "@/types/database";
 import type { ActivityType } from "./types";
@@ -7,6 +8,10 @@ import type { ActivityType } from "./types";
 // Server action callable from client components (brochure-share buttons,
 // booking submit, module completion). Each call writes one row to the
 // `activity` table — the heart of the measurement system (PRD §8.6).
+//
+// Revalidation: every activity row affects both the broker's /activity
+// dashboard and the admin's Overview + Brokers roster (PRD §4 round-trip
+// + plan 1.6.5).
 export async function logActivity(input: {
   broker_id: string;
   type: ActivityType;
@@ -23,4 +28,9 @@ export async function logActivity(input: {
     meta: input.meta ?? null,
   });
   if (error) throw error;
+
+  revalidatePath("/activity");
+  revalidatePath("/admin");
+  revalidatePath("/admin/brokers");
+  revalidatePath(`/admin/brokers/${input.broker_id}`);
 }

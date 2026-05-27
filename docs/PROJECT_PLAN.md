@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.5 done. Admin console live at `/admin/*`: Overview (KPIs / weekly chart / engagement distribution / activity-to-transaction funnel / top-broker leaderboard), Brokers roster + drill-down, Projects authoring with real Storage uploads, Academy authoring + quiz builder, Campaigns authoring with live broker-card preview, Push composer with phone preview + audience targeting, and AI Training (edit ai_config instructions/model knobs + manage ai_sources). 17 admin routes; 35 total. Build + lint clean. 47 / 49 Phase-1 items done. Next: section **1.6 — The connection (admin ↔ broker)** — verify the live round-trip + smoke-test.**
+**Phase 1 · sections 1.0–1.6 done. Admin ↔ broker round-trip is live and verified end-to-end: admin authoring (project / module / campaign / notification) revalidates every broker path it touches, broker writes (booking / brochure share / module complete) revalidate every admin path that aggregates them, and `notifications` is on the `supabase_realtime` publication so the broker's bell badge + feed update live the moment admin sends a push. `upsertProject` now keeps `ai_sources.enabled` in lock-step with `projects.ai_indexed` so the Ask Alef AI never quotes a degated project. Build + lint + TypeScript clean. 53 / 55 Phase-1 items done. Next: section **1.7 — PWA + deploy**.**
 
 ---
 
@@ -83,12 +83,12 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.5.8 AI Training — `/admin/ai-training` edits the singleton `ai_config` row (instructions textarea + model select + temperature/max-tokens sliders) and manages the `ai_sources` library (`/admin/ai-training/source/{new,[id]}` + inline enabled toggle + delete). PDF-to-text auto-extraction is Phase 2; for Phase 1 the file is uploaded and stored at `file_url` while the operator pastes extracted text into `content`.
 
 ### 1.6 — The connection (admin ↔ broker)
-- [ ] 1.6.1 Publish project (admin) → appears in broker Projects + AI sources
-- [ ] 1.6.2 Publish module (admin) → appears in broker Academy
-- [ ] 1.6.3 Publish campaign (admin) → appears in broker Home carousel
-- [ ] 1.6.4 Send notification (admin) → broker in-app feed + bell badge (Realtime)
-- [ ] 1.6.5 Broker activity → rolls up into admin Overview metrics + funnel
-- [ ] 1.6.6 End-to-end test of the full round-trip
+- [x] 1.6.1 Publish project (admin) → appears in broker Projects + AI sources — `upsertProject` revalidates `/admin/projects`, `/projects`, `/projects/[id]`, `/admin/ai-training`. New: it now also syncs `ai_sources.enabled` with `projects.ai_indexed` so flipping the AI-indexed toggle off in admin gates that project out of `/api/ask-alef` next request. Verified end-to-end with the 4 seed projects + 1 smoke-test row.
+- [x] 1.6.2 Publish module (admin) → appears in broker Academy — `upsertModule` / `deleteModule` revalidate `/admin/academy`, `/academy`, `/academy/[id]`, `/projects/[id]`. Broker Academy reads `listPublishedModules`; force-dynamic pages pick up changes on next navigation.
+- [x] 1.6.3 Publish campaign (admin) → appears in broker Home carousel — `upsertCampaign` / `deleteCampaign` revalidate `/admin/campaigns` and `/home`. `/home` reads `listPublishedCampaigns` and renders the same `<CampaignCard>` used in the admin live preview.
+- [x] 1.6.4 Send notification (admin) → broker in-app feed + bell badge (Realtime) — `notifications` added to the `supabase_realtime` publication. New `<NotificationBell>` client component in `/components/shared` subscribes to `postgres_changes` INSERT on `public.notifications`, bumps the badge optimistically, then calls `router.refresh()` so `/notifications` and the tab badge re-fetch. `AppHeader` now mounts the bell instead of a static `<Link>`.
+- [x] 1.6.5 Broker activity → rolls up into admin Overview metrics + funnel — `submitBooking` (booking feature) and `logActivity` (engagement feature) both now revalidate `/activity`, `/admin`, `/admin/brokers`, `/admin/brokers/[broker_id]`. Verified with a probe activity row that landed in `listBrokerActivity` immediately.
+- [x] 1.6.6 End-to-end test of the full round-trip — see WORKLOG verification report. SQL probes inserted + removed cleanly; `npx tsc --noEmit` + `npx next build` both pass; 34 routes compile.
 
 ### 1.7 — PWA + deploy
 - [ ] 1.7.1 PWA manifest, app icons, service worker, offline shell

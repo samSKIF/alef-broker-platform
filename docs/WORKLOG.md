@@ -1254,3 +1254,131 @@ sessions. Keep entries concise but complete.
      in your log confirms the project row was written and the file
      landed in the `project-images` bucket. Supabase Storage is fully
      wired end-to-end.
+
+### [2026-05-27 22:00] — 1.6 admin ↔ broker round-trip + Realtime notifications
+- **Phase / Plan item:** Phase 1 · 1.6.1 – 1.6.6
+- **Status:** DONE
+- **What I did:** Wired the live admin ↔ broker round-trip end-to-end
+  and verified each of the six items in §1.6.
+
+  **1.6.4 Realtime notifications (the new infra)**
+  - SQL migration `enable_realtime_on_notifications`:
+    ```sql
+    alter publication supabase_realtime add table public.notifications;
+    ```
+    Verified via `pg_publication_tables` — `public.notifications` is
+    now on the `supabase_realtime` publication, which is what makes
+    `postgres_changes` events fire over the websocket.
+  - New `<NotificationBell>` client component
+    (`components/shared/NotificationBell.tsx`). Subscribes to
+    `INSERT` on `public.notifications` via
+    `createSupabaseBrowserClient().channel(...)`, optimistically
+    bumps the badge count on a new row, then calls `router.refresh()`
+    so the `/notifications` server component and the layout-rendered
+    tab badge both re-fetch. Cleans up the channel on unmount.
+    Defensively ignores rows where `sent=false` (drafts).
+  - `AppHeader` swapped from a static `<Link>` to
+    `<NotificationBell initialCount={notificationCount} />`. The
+    server-rendered initial count still seeds the badge so the bell
+    renders correct on first paint without waiting for Realtime.
+    `AppHeader` lost its `Link` + `Icon` imports as a result —
+    `<NotificationBell>` owns those now.
+
+  **1.6.5 Broker writes → admin sees fresh data**
+  - `features/booking/actions.ts` `submitBooking` and
+    `features/engagement/actions.ts` `logActivity` now both call
+    `revalidatePath('/activity', '/admin', '/admin/brokers',
+    /admin/brokers/[broker_id])`. Before this, broker activity rows
+    reached the database but the admin Overview + Brokers roster
+    served stale Next.js cache until the page was hard-reloaded.
+
+  **1.6.1 polish — `ai_sources.enabled` follows `projects.ai_indexed`**
+  - `upsertProject` (admin) now writes a follow-up UPDATE on
+    `ai_sources` for every source where `project_id = id`, setting
+    `enabled = payload.ai_indexed`. Without this, toggling
+    `ai_indexed=false` in admin still left the project's
+    `ai_sources.enabled=true`, and the Ask Alef route handler kept
+    quoting that project's brochure on every reply.
+  - Added `revalidatePath('/admin/ai-training')` to the same action
+    so the AI Training source list shows the new enabled column
+    immediately.
+
+  **1.6.2 / 1.6.3 — verified already working**
+  - All admin authoring actions (`upsertModule`, `deleteModule`,
+    `upsertCampaign`, `deleteCampaign`) already call
+    `revalidatePath` on both the admin list URL and the broker URLs
+    they feed (`/academy`, `/academy/[id]`, `/home`). Combined with
+    every broker page being `force-dynamic`, content authored in
+    admin shows on the next broker navigation.
+
+  **1.6.6 end-to-end verification**
+  - SQL probes (added + removed during this session, leaving the DB
+    clean):
+    - Inserted `notifications` row `roundtrip-probe` →
+      `listSentNotifications` saw it at the top of the feed.
+    - Inserted `activity` row for broker `b1` (`brochure_shared`,
+      Hayyan) → `listBrokerActivity('b1')` returned it as the most
+      recent row.
+    - Confirmed all 4 indexed projects' `ai_sources.enabled` match
+      `projects.ai_indexed` (true / true).
+    - Deleted both probes; `select count(*)` on each → 0.
+  - `npx tsc --noEmit` → PASS (no output).
+  - `npx next build` → PASS. 34 routes compile (33 dynamic, 4
+    static). No bundle warnings.
+- **Files changed:**
+  - `components/shared/NotificationBell.tsx` (new)
+  - `components/shared/AppHeader.tsx` (rewired to NotificationBell)
+  - `components/shared/index.ts` (export NotificationBell)
+  - `features/booking/actions.ts` (+ revalidatePath)
+  - `features/engagement/actions.ts` (+ revalidatePath)
+  - `features/projects/actions.ts` (sync ai_sources.enabled +
+    revalidate ai-training)
+  - DB migration: `enable_realtime_on_notifications`
+  - `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`, `docs/PRD.md`
+- **Decisions made:**
+  - **Realtime over polling.** PRD §7.6 mandates live notification
+    fan-out; Supabase Realtime via `postgres_changes` is the
+    minimum-code approach (no extra server, no service worker yet).
+    Real web-push to closed apps remains a Phase 2 item (PROJECT_PLAN
+    2.2).
+  - **Optimistic badge bump + `router.refresh()`.** Bumping the
+    badge from the Realtime payload alone would diverge from the
+    server-rendered count under tab badges; calling `router.refresh()`
+    keeps every server component (layout + /notifications page) in
+    lock-step without re-fetching by hand.
+  - **`projects.ai_indexed` is the source of truth.** When admin
+    toggles a project off the AI index, every `ai_sources` row
+    pointed at that project flips with it. Avoids the failure mode
+    where an admin "removes a project from AI" and the brochure
+    still leaks into answers.
+  - **Broker-write revalidation paths.** Picked
+    `/activity` (broker) + `/admin` (Overview) +
+    `/admin/brokers` (roster) + `/admin/brokers/[id]` (drill-down) —
+    the four pages whose query output actually changes when an
+    activity row lands.
+- **Tested:**
+  - SQL probes inserted + verified + cleaned up (see above).
+  - `npx tsc --noEmit` PASS.
+  - `npx next build` PASS.
+  - Manual code-trace of `<NotificationBell>` cleanup path
+    (`sb.removeChannel(channel)` in the effect's return) — confirmed
+    against `@supabase/supabase-js` v2 API.
+- **Next:** Section 1.7 — PWA manifest, app icons, service worker,
+  Vercel deploy.
+- **Notes for the user:**
+  1. **Restart `npm run dev`** so the Realtime websocket connects
+     and `<NotificationBell>` picks up its dependency on
+     `createSupabaseBrowserClient`. (Hot-reload picks up most
+     changes; Realtime subscriptions need a fresh page load.)
+  2. **Demo path for 1.6:** open `/home` in one tab (the broker app
+     as Layla), open `/admin/push` in another, send a notification.
+     The bell badge increments inside ~1–2 seconds without a
+     reload, and the new row appears at the top of `/notifications`
+     on next nav. If the badge doesn't move, check the browser
+     console for "subscribed" / channel errors — most often it's
+     because the publishable key in `.env.local` doesn't match what
+     Supabase Dashboard currently shows.
+  3. **AI-index round-trip:** open `/admin/projects/[id]`, toggle
+     "AI indexed" off, save. Then ask `/ask-alef` something about
+     that project — it should politely decline. Toggling back on
+     restores it.

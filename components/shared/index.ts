@@ -9,6 +9,7 @@ export { Chip } from "./Chip";
 export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { Logo } from "./Logo";
+export { NotificationBell } from "./NotificationBell";
 export { Progress } from "./Progress";
 export { SubmitButton } from "./SubmitButton";
 export { TabBar } from "./TabBar";

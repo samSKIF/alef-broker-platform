@@ -77,9 +77,24 @@ export async function upsertProject(formData: FormData): Promise<void> {
   const { error } = await sb.from("projects").upsert(payload);
   if (error) throw error;
 
+  // Keep the AI knowledge base in sync with the project's ai_indexed flag
+  // (PRD §6.6 + plan 1.6.1). The Ask Alef route handler only includes
+  // sources where ai_sources.enabled = true, so flipping a project's
+  // ai_indexed off must also disable its sources — otherwise the AI keeps
+  // answering about a project the admin just gated.
+  const { error: syncError } = await sb
+    .from("ai_sources")
+    .update({
+      enabled: payload.ai_indexed,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("project_id", id);
+  if (syncError) throw syncError;
+
   revalidatePath("/admin/projects");
   revalidatePath("/projects"); // broker app list
   revalidatePath(`/projects/${id}`);
+  revalidatePath("/admin/ai-training"); // sources list shows enabled column
   redirect("/admin/projects");
 }
 

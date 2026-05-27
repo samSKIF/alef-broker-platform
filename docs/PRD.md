@@ -683,6 +683,31 @@ analytics, native app wrappers, AWS migration for video/scale.
   admin authoring forms. Forms that need client-side mediation before
   submit (e.g. broker BookingForm) keep using
   `<form onSubmit>` + `useTransition`.
+- **[27 May 2026]** **Notifications use Supabase Realtime (Phase 1).**
+  `public.notifications` is on the `supabase_realtime` publication.
+  The broker's `<NotificationBell>` client component subscribes to
+  `postgres_changes` INSERT events; on a hit it bumps the badge
+  optimistically and calls `router.refresh()` so the
+  `/notifications` server component + tab badge stay in lock-step.
+  Real device push (web-push to a closed PWA) is Phase 2
+  (PROJECT_PLAN 2.2). Realtime gives the live demo experience
+  PRD §7.6 calls for without standing up a separate push service.
+- **[27 May 2026]** **`ai_sources.enabled` follows
+  `projects.ai_indexed`.** `upsertProject` (admin) writes a follow-up
+  UPDATE on `ai_sources` so every source pointed at the project
+  flips with the project's AI-index toggle. Without this, toggling
+  `ai_indexed=false` left the source row enabled and Ask Alef kept
+  quoting the brochure. PRD §6.6 says the AI uses
+  `projects.ai_indexed=true` as the source filter — this enforces
+  that contract.
+- **[27 May 2026]** **Broker writes revalidate admin paths.**
+  `submitBooking` and `logActivity` (broker-side actions) now call
+  `revalidatePath('/activity', '/admin', '/admin/brokers',
+  /admin/brokers/[broker_id])`. Without this, broker activity rows
+  reach the database but the admin Overview + Brokers roster serve
+  stale Next.js cache until manual hard-reload. The round-trip
+  required revalidation symmetry: admin writes already invalidated
+  broker paths; this completes the loop.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at
   launch — Phase 1 seed uses all 4 indexed projects from the seed
