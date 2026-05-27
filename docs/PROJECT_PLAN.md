@@ -225,6 +225,18 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   `action` (the closure captures local state that can't be serialised
   across the server-action boundary). New shared `<SubmitButton>`
   primitive uses `useFormStatus` for pending state.
+- **[2026-05-27] Server-action body-size limit raised to 20 MB**
+  (`next.config.ts` → `experimental.serverActions.bodySizeLimit`).
+  Default is 1 MB; the admin authoring forms upload project covers
+  (~1 MB JPGs) and brochure PDFs (~10 MB). 20 MB is comfortably larger
+  than anything Alef ships today and well under Vercel's hard caps in
+  production. Earlier `413 Body exceeded 1 MB limit` errors surfaced
+  to the browser as another misleading "Failed to fetch".
+- **[2026-05-27] Logo `<Image>` props cleaned up.** `next/image`
+  warned about "width or height modified, but not the other" — we
+  were passing both `width`/`height` props AND a conflicting
+  `style={{ height, width: "auto" }}`. Dropped the style override; the
+  props alone govern the rendered size.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.

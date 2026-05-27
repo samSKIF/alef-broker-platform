@@ -1154,3 +1154,57 @@ sessions. Keep entries concise but complete.
      the smell test is: am I wrapping a server action in a closure
      that captures local state? Switch to direct `action={…}` + the
      `<SubmitButton>` pattern.
+
+### [2026-05-27 19:00] — Fix: server-action body-size limit + Logo aspect-ratio warning
+- **Phase / Plan item:** Phase 1 · 1.5 follow-up — bug fixes
+- **Status:** DONE
+- **What I did:** Samir's dev-server log surfaced the *actual* root
+  cause behind the "Failed to fetch" error when uploading a project:
+  ```
+  ⨯ Error: Body exceeded 1 MB limit. (statusCode: 413)
+  POST /admin/projects/new 500
+  ```
+  Next.js server actions cap request bodies at 1 MB by default — fine
+  for a text form, useless for cover-image + brochure-PDF uploads.
+  Raised the limit to 20 MB in `next.config.ts`:
+  ```ts
+  experimental: { serverActions: { bodySizeLimit: "20mb" } }
+  ```
+  20 MB is comfortably larger than anything Alef ships today and well
+  under Vercel's hard caps in production.
+
+  Also fixed an unrelated Next.js Image warning the same dev-server
+  log was emitting:
+  ```
+  Image with src "/logo-dark.png" has either width or height modified,
+  but not the other.
+  ```
+  Logo component was passing both `width`/`height` props AND
+  `style={{ height, width: "auto" }}` — the style override conflicted
+  with the props. Dropped the style; the props alone govern the
+  rendered size, aspect ratio is intrinsic to the PNG.
+
+  Hydration mismatch in the same log (`myus-mall-extension-is-installed`
+  div injected into <body>) is a Chrome extension messing with HTML
+  before React loads — not our bug. Tell Samir to disable on
+  `localhost` or ignore.
+- **Files changed:**
+  - Modified: `next.config.ts` (bodySizeLimit 20mb),
+    `components/shared/Logo.tsx` (dropped style override),
+    `docs/PRD.md` §12, `docs/PROJECT_PLAN.md` DISCOVERED ITEMS,
+    `docs/WORKLOG.md` (this entry).
+- **Decisions made:**
+  - **20 MB body-size cap for server actions.** Balances headroom for
+    brochure PDFs against pathological uploads.
+  - **Logo `<Image>` props govern size, no style override.** Simpler;
+    PNG aspect ratio carries through next/image automatically.
+- **Tested:**
+  - `npm run build` → PASS.
+  - `npm run lint` → PASS (0/0).
+- **Next:** Section 1.6 — verify round-trip + wire Realtime.
+- **Notes for the user:**
+  1. **Restart the dev server** (`npm run dev`) so the new
+     `next.config.ts` takes effect. Then retry project creation.
+  2. **The hydration warning is from a Chrome extension**
+     (`myus-mall-extension`) — disable it on `localhost` or ignore.
+     Doesn't affect production.
