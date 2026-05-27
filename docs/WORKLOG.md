@@ -1382,3 +1382,174 @@ sessions. Keep entries concise but complete.
      "AI indexed" off, save. Then ask `/ask-alef` something about
      that project — it should politely decline. Toggling back on
      restores it.
+
+### [2026-05-27 23:30] — 1.7.1 PWA: manifest, icons, service worker, offline shell
+- **Phase / Plan item:** Phase 1 · 1.7.1
+- **Status:** DONE (1.7.1 only — 1.7.2-1.7.4 are blocked on Samir; see Notes below for the deploy guide)
+- **What I did:** Made the broker app installable per PRD §11.
+  Next.js' metadata-route convention does the heavy lifting — no
+  third-party PWA packages needed.
+
+  **Manifest** (`app/manifest.ts`):
+  - `name` "Alef Broker Platform", `short_name` "Alef"
+  - `display: 'standalone'`, `orientation: 'portrait'`
+  - `theme_color: #333F48` (PRD §5.1 navy), `background_color: #F1ECD6` (beige)
+  - 3 icon entries referencing the generated `/icon0` (192) +
+    `/icon1` (512, twice: `any` + `maskable` purposes for Android
+    adaptive icons)
+  - `categories: ['business', 'productivity']`
+
+  **Icons** — generated programmatically via `next/og`
+  `ImageResponse` so the file inputs are tiny TSX, not 4 binary
+  PNGs we'd have to keep in sync. Brand: navy ground + copper
+  letterform "A" inside a copper roundel (apple/192/512), plain
+  copper "A" at favicon size:
+  - `app/icon.tsx` — 32×32 browser-tab favicon
+  - `app/apple-icon.tsx` — 180×180 iOS home-screen
+  - `app/icon0.tsx` — 192×192 PWA "any"
+  - `app/icon1.tsx` — 512×512 PWA "any" + "maskable" (inner 80%
+    safe zone so Android adaptive icons never crop the brand mark)
+
+  **Service worker** (`public/sw.js`):
+  - Precaches `/offline` at install
+  - Activate cleans up old caches by version key (`alef-static-v1`)
+  - On `fetch`: only intercepts navigation requests; tries network
+    first; falls back to cached `/offline` page when offline
+  - Does NOT precache JS/CSS chunks (Next fingerprints them per
+    build, so a static list goes stale immediately — browser cache
+    handles them well enough)
+
+  **SW registrar** (`components/shared/ServiceWorkerRegister.tsx`):
+  - "use client", `useEffect` calls `navigator.serviceWorker.register('/sw.js')`
+  - Renders `null` — pure side-effect component
+  - Guards on `'serviceWorker' in navigator` (older browsers, test
+    envs); swallows registration errors so a broken SW never breaks
+    the page
+  - Mounted from `app/layout.tsx`'s `<body>` so every route triggers
+    the SW lifecycle
+
+  **Offline shell** (`app/offline/page.tsx`):
+  - `force-static` — safe to precache at install time
+  - Dark phone shell, Alef logo, divider, "You're offline" heading,
+    "Reconnect to load fresh projects…" subtext. Stays on-brand
+    instead of the browser's default error page.
+
+  **Root layout metadata** (`app/layout.tsx`):
+  - Added `appleWebApp: { capable: true, title: 'Alef',
+    statusBarStyle: 'black-translucent' }` so iOS Safari drops the
+    chrome when the user opens the home-screen shortcut
+  - Added a `Viewport` export with `themeColor: '#333F48'`,
+    `width: 'device-width'`, `initialScale: 1`,
+    `viewportFit: 'cover'` (Next.js 15+ split `themeColor` out of
+    `metadata` into `viewport`)
+
+- **Files changed:**
+  - `app/manifest.ts` (new)
+  - `app/icon.tsx` (new)
+  - `app/apple-icon.tsx` (new)
+  - `app/icon0.tsx` (new)
+  - `app/icon1.tsx` (new)
+  - `app/offline/page.tsx` (new)
+  - `app/layout.tsx` (appleWebApp + viewport + mount registrar)
+  - `public/sw.js` (new)
+  - `components/shared/ServiceWorkerRegister.tsx` (new)
+  - `components/shared/index.ts` (export the registrar)
+  - `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`, `docs/PRD.md`
+- **Decisions made:**
+  - **Programmatic icons, not committed PNGs.** Five-line TSX files
+    via `next/og` are easier to inspect and tweak than binary blobs.
+    If Alef later ships a square symbol, dropping a PNG at the same
+    path overrides the generated version.
+  - **Manifest references the generated routes** (`/icon0`,
+    `/icon1`) directly. Means the manifest never goes stale when we
+    re-style the icon — the route URL stays constant; only the
+    rendered output changes.
+  - **Navigate-only SW interception.** Trying to cache JS/CSS in a
+    Next.js app means chasing per-build chunk hashes; for a POC
+    that's overkill. Browser cache covers them. The SW exists for
+    one thing: a branded offline shell when there's no signal.
+  - **`force-static` on `/offline`.** SW install pre-caches by
+    `cache.add(OFFLINE_URL)` — that's a fetch under the hood. Making
+    the page static avoids any chance of pulling broker data into a
+    pre-cached HTML blob.
+  - **No env-conditional registration.** Some setups skip SW in dev;
+    we register everywhere because the SW is minimal enough that dev
+    caching doesn't trip us up, and the broker demo path runs
+    against the prod build anyway.
+- **Tested:**
+  - `npx tsc --noEmit` → PASS.
+  - `npx next build` → PASS. 38 routes total, including 5 new
+    static endpoints: `/manifest.webmanifest`, `/icon`, `/icon0`,
+    `/icon1`, `/apple-icon`, `/offline`.
+  - `npx next start -p 3100` then smoke-tested with curl:
+    - `GET /manifest.webmanifest` → 200, JSON parses, all required
+      fields present.
+    - `GET /icon0` → 200, image/png, 5.3 KB.
+    - `GET /icon1` → 200, image/png, 19 KB.
+    - `GET /apple-icon` → 200, image/png, 4.9 KB.
+    - `GET /sw.js` → 200, JS body served as expected.
+    - `GET /offline` → 200, contains "offline" text.
+    - `GET /welcome` HTML head → contains
+      `<link rel="manifest" href="/manifest.webmanifest">` + 4 icon
+      `<link>` tags + 1 `apple-touch-icon`.
+- **Next:** 1.7.2-1.7.4 — Samir deploys to Vercel (see below). Once
+  the live URL exists I'll smoke-test the 3 "wow" moments (1.7.5).
+- **Notes for the user:**
+
+  **Vercel deploy — step-by-step.** Do NOT paste any secret into
+  chat; every secret goes into Vercel's Environment Variables panel.
+
+  1. **Confirm code is on GitHub.** `git status` should show "up to
+     date with origin/main". (We've been pushing as we go — should
+     already be the case.)
+  2. **Sign in to Vercel.** Open `https://vercel.com/signup`. Click
+     **"Continue with GitHub"** and use the same GitHub identity
+     that owns `samSKIF/alef-broker-platform`. Vercel's Hobby plan
+     is free and is enough for the demo.
+  3. **Authorise Vercel for the repo.** On the GitHub permissions
+     prompt, grant access to `samSKIF/alef-broker-platform` (you can
+     do "all repos" or just this one).
+  4. **Create the project.** On the Vercel dashboard, click **"Add
+     New… → Project"**. Pick `samSKIF/alef-broker-platform` from
+     the list and hit **Import**.
+  5. **Framework preset = Next.js.** Vercel auto-detects this. Leave
+     **Root Directory** blank, **Build Command** blank (uses
+     `next build`), **Output Directory** blank.
+  6. **Environment variables.** Expand the "Environment Variables"
+     section and add the 4 below. For each, paste the value from
+     your `.env.local` (NOT here in chat). Keep the default
+     "Production, Preview, Development" checkboxes:
+
+     | Name | Source in `.env.local` |
+     |---|---|
+     | `NEXT_PUBLIC_SUPABASE_URL` | `NEXT_PUBLIC_SUPABASE_URL=…` |
+     | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY=…` |
+     | `SUPABASE_SERVICE_ROLE_KEY` | `SUPABASE_SERVICE_ROLE_KEY=…` |
+     | `OPENAI_API_KEY` | `OPENAI_API_KEY=…` |
+
+     **⚠️ Note on the env name:** your task message said
+     `NEXT_PUBLIC_SUPABASE_ANON_KEY`, but the codebase uses
+     `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (per PRD §12 decision
+     27 May — we're on the modern "publishable key", not the legacy
+     anon JWT). Use the publishable-key name above; otherwise the
+     Supabase client throws at runtime.
+
+  7. **Deploy.** Click **Deploy**. First build takes ~2-3 min.
+  8. **Live URL.** Vercel will assign
+     `alef-broker-platform-<hash>.vercel.app`. The dashboard shows a
+     "Visit" button when ready.
+  9. **Tell me the URL** and I'll run a smoke-test pass against it
+     (manifest fetch, SW registration check, the three "wow"
+     moments — AI, branded brochure share, engagement dashboard).
+  10. **(Optional later)** If you want a friendlier URL,
+      Vercel → Settings → Domains → add `alef.<yourdomain>` or use
+      the free `vercel.app` alias rename.
+
+  **What to expect once live:**
+  - Open the URL on your phone → "Add to Home Screen" should appear
+    in Safari/Chrome (look for the Share menu on iOS).
+  - After install, the app opens in standalone mode (no browser
+    chrome), navy status bar, copper-A icon.
+  - Service worker registers on first visit; reload after going
+    airplane-mode → you should land on the branded "You're offline"
+    screen instead of Safari's default error page.

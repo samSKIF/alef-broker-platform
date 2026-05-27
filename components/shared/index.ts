@@ -11,6 +11,7 @@ export type { IconName } from "./Icon";
 export { Logo } from "./Logo";
 export { NotificationBell } from "./NotificationBell";
 export { Progress } from "./Progress";
+export { ServiceWorkerRegister } from "./ServiceWorkerRegister";
 export { SubmitButton } from "./SubmitButton";
 export { TabBar } from "./TabBar";
 export { TierBadge } from "./TierBadge";

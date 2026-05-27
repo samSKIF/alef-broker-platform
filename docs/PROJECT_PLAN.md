@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.6 done. Admin ↔ broker round-trip is live and verified end-to-end: admin authoring (project / module / campaign / notification) revalidates every broker path it touches, broker writes (booking / brochure share / module complete) revalidate every admin path that aggregates them, and `notifications` is on the `supabase_realtime` publication so the broker's bell badge + feed update live the moment admin sends a push. `upsertProject` now keeps `ai_sources.enabled` in lock-step with `projects.ai_indexed` so the Ask Alef AI never quotes a degated project. Build + lint + TypeScript clean. 53 / 55 Phase-1 items done. Next: section **1.7 — PWA + deploy**.**
+**Phase 1 · sections 1.0–1.6 + 1.7.1 done. PWA is installable: `app/manifest.ts` returns a valid web manifest with brand-coloured theme + 4 generated icon endpoints (`/icon`, `/apple-icon`, `/icon0` 192px, `/icon1` 512px) wired in via Next.js' metadata routes; `public/sw.js` registers as a service worker on every page load (mounted from root layout via `<ServiceWorkerRegister>`) and provides a navigate-fallback to `/offline` when no network. Build + TypeScript clean — 38 routes (33 dynamic, 5 static, plus icon/manifest endpoints). 54 / 55 Phase-1 items done. **BLOCKED on Samir** for 1.7.2–1.7.4 — Vercel account creation + env-var paste; see WORKLOG entry for step-by-step.**
 
 ---
 
@@ -91,10 +91,10 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.6.6 End-to-end test of the full round-trip — see WORKLOG verification report. SQL probes inserted + removed cleanly; `npx tsc --noEmit` + `npx next build` both pass; 34 routes compile.
 
 ### 1.7 — PWA + deploy
-- [ ] 1.7.1 PWA manifest, app icons, service worker, offline shell
-- [ ] 1.7.2 Connect GitHub repo to Vercel
-- [ ] 1.7.3 Configure env vars on Vercel
-- [ ] 1.7.4 Deploy; verify the live URL on mobile + desktop
+- [x] 1.7.1 PWA manifest, app icons, service worker, offline shell — `app/manifest.ts` (name, short_name, navy theme, beige background, standalone display, 192/512/maskable icons), `app/icon.tsx` (32px favicon), `app/apple-icon.tsx` (180px iOS), `app/icon0.tsx` (192px PWA), `app/icon1.tsx` (512px any+maskable PWA) — all generated programmatically via `next/og` ImageResponse. `public/sw.js` precaches `/offline` and intercepts failed navigations with the cached shell. `<ServiceWorkerRegister>` client component (mounted in root `app/layout.tsx`) calls `navigator.serviceWorker.register('/sw.js')` on mount. Root metadata exports `appleWebApp.capable=true` + viewport `themeColor=#333F48` so iOS Safari drops the chrome on the home-screen install.
+- [!] 1.7.2 Connect GitHub repo to Vercel — BLOCKED on Samir (account + auth flow). Step-by-step guide in WORKLOG entry [2026-05-27].
+- [!] 1.7.3 Configure env vars on Vercel — BLOCKED on Samir (paste 4 secrets into Vercel dashboard, NOT into chat). Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`. **NOTE:** The session task message listed `NEXT_PUBLIC_SUPABASE_ANON_KEY` but the codebase actually reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (per PRD §12 decision 27 May).
+- [!] 1.7.4 Deploy; verify the live URL on mobile + desktop — BLOCKED on Samir kicking the first build. After deploy I will run smoke-tests against the live URL.
 - [ ] 1.7.5 Smoke-test the 3 "wow" moments: AI · branded brochure · engagement dashboard
 
 ### 1.8 — Demo readiness
@@ -249,7 +249,14 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- _(none active for 1.6)_
+- **[2026-05-27] 1.7.2 – 1.7.4 — Vercel deploy.** Needs Samir to (a)
+  sign in to Vercel with the same GitHub identity that owns
+  `samSKIF/alef-broker-platform`, (b) "Add New… → Project" → import the
+  repo (Next.js + Tailwind auto-detected), (c) paste the four env
+  vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
+  `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`) into the Vercel
+  Environment Variables panel (NOT into chat), (d) hit Deploy. Once
+  the build is green I'll smoke-test the live URL.
 
 ### Outstanding follow-ups (do NOT block 1.6)
 - **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** All public tables (now 8 with `ai_config` + `ai_sources`) have Row Level Security **disabled**. Intentional POC posture per PRD §11; remediation owned by Phase 2 item 2.7. Note `ai_config` and `ai_sources` need particular care since they store the system prompt — must be admin-only writable in production.
