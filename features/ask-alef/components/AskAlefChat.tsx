@@ -13,23 +13,24 @@ import { AlefAIAvatar } from "./AlefAIAvatar";
 import type { ChatMessage } from "../types";
 
 // Ask Alef chat surface (PRD §6.6). Posts to /api/ask-alef and streams the
-// assistant's reply as plain-text chunks. Three suggestion chips for cold
-// starts; tap-to-send.
+// assistant's reply as plain-text chunks.
+//
+// Mobile-first layout, modelled on Claude / ChatGPT mobile:
+//   - Header pinned to top.
+//   - Centered empty-state when no conversation has started.
+//   - Once messages exist, they fill the scrollable middle.
+//   - Suggestion chips live just above the input (always reachable when
+//     the keyboard is open).
+//   - Input pinned to bottom; pb honours iOS home-indicator safe area.
 
 const SUGGESTIONS = [
-  "Compare Hayyan and Olfah for a family buyer",
-  "What's the cheapest entry-point in the Alef portfolio?",
-  "Draft a WhatsApp pitch for Palace Residences",
+  "What modules should I do next?",
+  "How many points do I have?",
+  "Compare Hayyan and Olfah",
 ];
 
-const INITIAL_GREETING: ChatMessage = {
-  role: "assistant",
-  content:
-    "Ahlan. I'm Alef AI — your sales co-pilot. Ask me anything about Alef's projects: units, pricing, status, amenities, or how to position them for clients.",
-};
-
 export function AskAlefChat() {
-  const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_GREETING]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [streaming, setStreaming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,11 +62,8 @@ export function AskAlefChat() {
         const res = await fetch("/api/ask-alef", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          // Drop the initial greeting from what we send upstream — it's a
-          // UI affordance, not part of the conversation history.
           body: JSON.stringify({
             messages: next
-              .slice(1) // drop the greeting
               .filter((m) => m.content.length > 0 || m.role === "user")
               .map(({ role, content }) => ({ role, content })),
           }),
@@ -121,8 +119,10 @@ export function AskAlefChat() {
     void send(input);
   }
 
+  const isEmpty = messages.length === 0;
+
   return (
-    <div className="flex h-full flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       {/* Header */}
       <header className="flex shrink-0 items-center gap-3 border-b border-line bg-bg px-4 pb-3 pt-13">
         <Link
@@ -148,78 +148,101 @@ export function AskAlefChat() {
         </div>
       </header>
 
-      {/* Messages */}
+      {/* Messages / empty state. flex-1 + min-h-0 lets this column claim
+          the available vertical space while staying scrollable. */}
       <div
         ref={listRef}
-        className="flex-1 overflow-y-auto px-4 pb-4 pt-5"
+        className="flex-1 min-h-0 overflow-y-auto px-4"
       >
-        <div className="flex flex-col gap-4">
-          {messages.map((m, i) => (
-            <MessageBubble
-              key={i}
-              role={m.role}
-              content={m.content}
-              streaming={
-                streaming &&
-                m.role === "assistant" &&
-                i === messages.length - 1
-              }
-            />
-          ))}
-          {error && (
-            <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-[12px] text-red-700">
-              {error}
-            </div>
-          )}
-          {/* Cold-start suggestion chips */}
-          {messages.length === 1 && !streaming && (
-            <div className="mt-2 flex flex-wrap gap-2">
-              {SUGGESTIONS.map((s) => (
-                <button
-                  key={s}
-                  type="button"
-                  onClick={() => void send(s)}
-                  className="rounded-pill border border-line bg-card px-3 py-2 text-[12px] font-semibold text-ink-2 shadow-soft-sm hover:bg-tint"
-                >
-                  {s}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
+        {isEmpty ? (
+          <EmptyState />
+        ) : (
+          <div className="flex flex-col gap-4 pb-4 pt-5">
+            {messages.map((m, i) => (
+              <MessageBubble
+                key={i}
+                role={m.role}
+                content={m.content}
+                streaming={
+                  streaming &&
+                  m.role === "assistant" &&
+                  i === messages.length - 1
+                }
+              />
+            ))}
+            {error && (
+              <div className="mt-2 rounded-md border border-red-200 bg-red-50 p-3 text-[12px] text-red-700">
+                {error}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
-      {/* Input */}
-      <form
-        onSubmit={onSubmit}
-        className="shrink-0 border-t border-line bg-bg px-3 pb-5 pt-3"
-      >
-        <div className="flex items-end gap-2 rounded-2xl border border-line bg-card p-1.5 shadow-soft-sm">
-          <textarea
-            ref={inputRef}
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                void send(input);
-              }
-            }}
-            placeholder="Ask Alef anything…"
-            rows={1}
-            disabled={streaming}
-            className="min-h-9 max-h-32 flex-1 resize-none bg-transparent px-3 py-2 text-[14px] leading-snug text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
-          />
-          <button
-            type="submit"
-            disabled={streaming || input.trim().length === 0}
-            aria-label="Send"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-accent transition-opacity disabled:opacity-40"
-          >
-            <Icon name="arrow-right" size={16} />
-          </button>
-        </div>
-      </form>
+      {/* Input footer — suggestion chips when empty, then the form. Safe-area
+          padding so the form clears the home indicator on iPhone. */}
+      <div className="shrink-0 border-t border-line bg-bg px-3 pt-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        {isEmpty && (
+          <div className="-mx-1 mb-2 flex gap-2 overflow-x-auto px-1 pb-1">
+            {SUGGESTIONS.map((s) => (
+              <button
+                key={s}
+                type="button"
+                onClick={() => void send(s)}
+                className="shrink-0 rounded-pill border border-line bg-card px-3 py-2 text-[12px] font-semibold text-ink-2 shadow-soft-sm hover:bg-tint"
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        )}
+        <form onSubmit={onSubmit}>
+          <div className="flex items-end gap-2 rounded-2xl border border-line bg-card p-1.5 shadow-soft-sm">
+            <textarea
+              ref={inputRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  void send(input);
+                }
+              }}
+              placeholder="Ask Alef anything…"
+              rows={1}
+              disabled={streaming}
+              className="min-h-9 max-h-32 flex-1 resize-none bg-transparent px-3 py-2 text-[14px] leading-snug text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={streaming || input.trim().length === 0}
+              aria-label="Send"
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-white shadow-accent transition-opacity disabled:opacity-40"
+            >
+              <Icon name="arrow-right" size={16} />
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
+// Centered, airy welcome — replaces the old chat-bubble greeting so the
+// cold start feels closer to Claude / ChatGPT's empty state.
+function EmptyState() {
+  return (
+    <div className="flex h-full flex-col items-center justify-center gap-4 px-2 text-center">
+      <AlefAIAvatar size={56} />
+      <div>
+        <h2 className="text-[22px] font-bold leading-tight tracking-[-0.02em] text-ink">
+          Ahlan. I&apos;m Alef AI.
+        </h2>
+        <p className="mx-auto mt-2 max-w-[260px] text-[13.5px] leading-[1.5] text-ink-2">
+          Your sales co-pilot — projects, training, campaigns, and your points.
+          Ask me anything.
+        </p>
+      </div>
     </div>
   );
 }

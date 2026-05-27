@@ -28,8 +28,13 @@ export function PhoneShell({
         className={[
           "relative w-full overflow-hidden flex flex-col",
           inner,
-          // Phone-sized viewport → full screen.
-          "min-h-screen",
+          // Phone-sized viewport → exactly the dynamic visible area.
+          // `h-dvh` (100dvh) excludes the iOS Safari chrome and shrinks
+          // when the on-screen keyboard appears — without it, `flex-1`
+          // children collapse and bottom-pinned inputs (Ask Alef chat,
+          // onboarding form) get pushed below the keyboard. `h-screen`
+          // is the fallback for browsers that don't support dvh.
+          "h-screen h-dvh",
           // Desktop-sized viewport → 390×844 device frame.
           "sm:w-[390px] sm:h-[844px] sm:min-h-0",
           "sm:rounded-[44px] sm:shadow-[0_30px_70px_rgba(51,63,72,0.18),0_0_0_1px_rgba(51,63,72,0.10)]",
