@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Icon, Logo } from "@/components/shared";
+import { Card, Icon, Logo, SubmitButton } from "@/components/shared";
 import type { Project } from "@/features/projects";
 import { sendNotification } from "../actions";
 
@@ -30,7 +30,6 @@ const LINK_TARGETS = [
 ];
 
 export function NotificationComposer({ projects }: NotificationComposerProps) {
-  const [pending, setPending] = useState(false);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
   const [mode, setMode] = useState<AudienceMode>("all");
@@ -49,15 +48,7 @@ export function NotificationComposer({ projects }: NotificationComposerProps) {
 
   return (
     <form
-      action={async (formData) => {
-        setPending(true);
-        try {
-          await sendNotification(formData);
-        } catch (err) {
-          setPending(false);
-          throw err;
-        }
-      }}
+      action={sendNotification}
       className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_300px]"
     >
       {/* Form */}
@@ -200,16 +191,16 @@ export function NotificationComposer({ projects }: NotificationComposerProps) {
             adds device push).
           </span>
         </div>
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
           full
-          type="submit"
-          disabled={pending || !title.trim()}
+          disabled={!title.trim()}
           iconRight={<Icon name="bell" size={16} />}
+          pendingLabel="Sending…"
         >
-          {pending ? "Sending…" : "Send now"}
-        </Button>
+          Send now
+        </SubmitButton>
       </div>
     </form>
   );

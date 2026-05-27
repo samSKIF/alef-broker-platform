@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Icon } from "@/components/shared";
+import { Card, Icon, SubmitButton } from "@/components/shared";
 import type { Project } from "@/features/projects";
 import { upsertModule } from "../actions";
 import { QuizBuilder } from "./QuizBuilder";
@@ -9,7 +9,9 @@ import type { Module, QuizQuestion } from "../types";
 
 // Admin authoring form for academy modules (PRD §7.4). Type toggle drives
 // which sub-fields are visible — online modules show duration + video
-// upload + quiz; live workshops show when_at, location, seats.
+// upload + quiz; live workshops show when_at, location, seats. Submit goes
+// straight to the upsertModule server action; <SubmitButton> handles
+// pending state.
 
 type ModuleAdminFormProps = {
   module?: Module;
@@ -25,21 +27,12 @@ export function ModuleAdminForm({
   const [kind, setKind] = useState<"online" | "live">(
     (mod?.kind as "online" | "live") ?? "online",
   );
-  const [pending, setPending] = useState(false);
 
   const initialQuiz = (mod?.quiz as unknown as QuizQuestion[] | null) ?? undefined;
 
   return (
     <form
-      action={async (formData) => {
-        setPending(true);
-        try {
-          await upsertModule(formData);
-        } catch (err) {
-          setPending(false);
-          throw err;
-        }
-      }}
+      action={upsertModule}
       className="grid grid-cols-1 gap-5 lg:grid-cols-3"
     >
       <input type="hidden" name="id" defaultValue={mod?.id ?? ""} />
@@ -193,16 +186,14 @@ export function ModuleAdminForm({
           />
         </Card>
 
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
           full
-          type="submit"
-          disabled={pending}
           iconRight={<Icon name="arrow-right" size={18} />}
         >
-          {pending ? "Saving…" : mod ? "Save changes" : "Create module"}
-        </Button>
+          {mod ? "Save changes" : "Create module"}
+        </SubmitButton>
       </div>
     </form>
   );

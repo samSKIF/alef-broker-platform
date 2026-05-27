@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Icon } from "@/components/shared";
+import { Card, Icon, SubmitButton } from "@/components/shared";
 import type { Project } from "@/features/projects";
 import { upsertAiSource } from "../actions";
 import type { AiSource } from "../types";
@@ -9,7 +9,7 @@ import type { AiSource } from "../types";
 // Create / edit a single ai_sources row (PRD 1.5.8).
 // Phase 1: file upload stores file_url for reference; the operator
 // pastes extracted text into `content` (PDF-to-text auto-extraction is
-// Phase 2 per PROJECT_PLAN follow-ups).
+// Phase 2). Submit goes straight to the server action.
 
 type AiSourceFormProps = {
   source?: AiSource;
@@ -19,21 +19,8 @@ type AiSourceFormProps = {
 const KIND_OPTIONS = ["brochure", "doc", "note"] as const;
 
 export function AiSourceForm({ source, projects }: AiSourceFormProps) {
-  const [pending, setPending] = useState(false);
-
   return (
-    <form
-      action={async (formData) => {
-        setPending(true);
-        try {
-          await upsertAiSource(formData);
-        } catch (err) {
-          setPending(false);
-          throw err;
-        }
-      }}
-      className="space-y-5"
-    >
+    <form action={upsertAiSource} className="space-y-5">
       <input type="hidden" name="id" defaultValue={source?.id ?? ""} />
       <input
         type="hidden"
@@ -133,15 +120,13 @@ What to tell clients
       </Card>
 
       <div className="flex justify-end">
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
-          type="submit"
-          disabled={pending}
           iconRight={<Icon name="arrow-right" size={16} />}
         >
-          {pending ? "Saving…" : source ? "Save source" : "Create source"}
-        </Button>
+          {source ? "Save source" : "Create source"}
+        </SubmitButton>
       </div>
     </form>
   );

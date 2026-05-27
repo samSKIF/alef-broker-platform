@@ -2,30 +2,22 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Button, Card, Icon } from "@/components/shared";
+import { Card, Icon, SubmitButton } from "@/components/shared";
 import { upsertProject } from "../actions";
 import type { Project } from "../types";
 
-// Admin authoring form (PRD §7.3). Submits FormData direct to the
-// upsertProject server action, which handles uploads + DB write + redirect.
-// `project` is undefined for new, populated for edit.
+// Admin authoring form (PRD §7.3). Passes the server action directly as
+// `form action` so React handles the FormData submission natively; pending
+// state comes from `useFormStatus` inside <SubmitButton> (we can't wrap the
+// action in a closure that captures local state — Next.js 16 can't
+// serialise it).
 
 export function ProjectAdminForm({ project }: { project?: Project }) {
   const isEdit = !!project;
-  const [pending, setPending] = useState(false);
 
   return (
     <form
-      action={async (formData) => {
-        setPending(true);
-        try {
-          await upsertProject(formData);
-        } catch (err) {
-          setPending(false);
-          // Re-throw so Next.js shows the error in dev.
-          throw err;
-        }
-      }}
+      action={upsertProject}
       className="grid grid-cols-1 gap-5 lg:grid-cols-3"
     >
       <input
@@ -153,16 +145,14 @@ export function ProjectAdminForm({ project }: { project?: Project }) {
           />
         </Card>
 
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
           full
-          type="submit"
-          disabled={pending}
           iconRight={<Icon name="arrow-right" size={18} />}
         >
-          {pending ? "Saving…" : isEdit ? "Save changes" : "Create project"}
-        </Button>
+          {isEdit ? "Save changes" : "Create project"}
+        </SubmitButton>
       </div>
     </form>
   );

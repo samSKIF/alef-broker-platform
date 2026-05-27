@@ -217,6 +217,14 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   `ai_sources.file_url`) but extracting its text into
   `ai_sources.content` is Phase 2. For Phase 1 the operator pastes the
   extracted text by hand.
+- **[2026-05-27] Admin form `action={…}` convention.** All six admin
+  forms pass the server action **directly** as
+  `<form action={serverAction}>` rather than wrapping it in an inline
+  async closure. Next.js 16 throws `TypeError: Failed to fetch` at the
+  `<form>` element when a client component passes a closure to a form's
+  `action` (the closure captures local state that can't be serialised
+  across the server-action boundary). New shared `<SubmitButton>`
+  primitive uses `useFormStatus` for pending state.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.

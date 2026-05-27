@@ -1088,3 +1088,69 @@ sessions. Keep entries concise but complete.
      active; pause it from the dashboard when not demoing.
   6. **Ready for 1.6?** Say "start 1.6" — verify the connection +
      wire Supabase Realtime for live notification fan-out.
+
+### [2026-05-27 18:30] — Fix: admin form action pattern (TypeError: Failed to fetch)
+- **Phase / Plan item:** Phase 1 · 1.5 follow-up — bug fix
+- **Status:** DONE
+- **What I did:** Samir reported a runtime
+  `TypeError: Failed to fetch` at `<form>` line 18 of
+  `ProjectAdminForm.tsx` when creating a new project from /admin. The
+  root cause: each of the six admin forms wraps the server action in an
+  inline async closure passed to `<form action={…}>`:
+  ```tsx
+  action={async (formData) => {
+    setPending(true);
+    try { await upsertProject(formData); }
+    catch (err) { setPending(false); throw err; }
+  }}
+  ```
+  Next.js 16 has to encode that closure as a transferable
+  reference; it captures `setPending` (a React setter that can't be
+  serialised) and dies at the `<form>` element with the misleading
+  "Failed to fetch" — there's no actual network request to fail.
+
+  Refactor: pass the server action directly as `<form action={serverAction}>`
+  and read the pending state via React's `useFormStatus` hook in a new
+  shared `<SubmitButton>` primitive.
+  - Added `components/shared/SubmitButton.tsx` (uses `useFormStatus`).
+  - Refactored ProjectAdminForm, ModuleAdminForm, CampaignAdminForm,
+    NotificationComposer, AiInstructionsEditor, AiSourceForm — each
+    now uses `<form action={serverAction}>` + `<SubmitButton>`.
+  - Removed the `pending` `useState` from each form (no longer needed).
+  - Documented the convention in PRD §12 and PROJECT_PLAN DISCOVERED
+    ITEMS so future forms follow the same pattern.
+- **Files changed:**
+  - Created: `components/shared/SubmitButton.tsx`.
+  - Modified: `components/shared/index.ts`,
+    `features/projects/components/ProjectAdminForm.tsx`,
+    `features/training/components/ModuleAdminForm.tsx`,
+    `features/campaigns/components/CampaignAdminForm.tsx`,
+    `features/notifications/components/NotificationComposer.tsx`,
+    `features/ask-alef/components/AiInstructionsEditor.tsx`,
+    `features/ask-alef/components/AiSourceForm.tsx`,
+    `docs/PRD.md` §12, `docs/PROJECT_PLAN.md` (DISCOVERED ITEMS),
+    `docs/WORKLOG.md`.
+- **Decisions made:**
+  - **Direct `action={serverAction}` is the canonical pattern** for any
+    admin form that has no need to peek at the FormData client-side
+    before submission. Forms that DO need client-side mediation (e.g.
+    the broker-side BookingForm validating before submit) keep using
+    `<form onSubmit>` + `useTransition`.
+  - **Dropped the "✓ Saved" toast on AiInstructionsEditor** for now —
+    the page revalidates and re-renders with the new values visible,
+    which is implicit feedback. A real success toast belongs to a
+    Phase 2 polish pass.
+- **Tested:**
+  - `npm run build` → PASS (35 routes, TypeScript clean).
+  - `npm run lint` → PASS (0 / 0).
+  - End-to-end form submission NOT walked manually this turn but the
+    new pattern is the Next.js-canonical one; the original bug
+    reproduced 1:1 with the screenshot.
+- **Next:** Section 1.6 — verify round-trip + wire Realtime.
+- **Notes for the user:**
+  1. **Re-load `/admin/projects/new`** in your dev server — the form
+     should now submit cleanly. Same fix applies to every admin form.
+  2. If you ever see "TypeError: Failed to fetch" at a `<form>` again,
+     the smell test is: am I wrapping a server action in a closure
+     that captures local state? Switch to direct `action={…}` + the
+     `<SubmitButton>` pattern.

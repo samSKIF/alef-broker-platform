@@ -1,14 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Icon } from "@/components/shared";
+import { Card, Icon, SubmitButton } from "@/components/shared";
 import { CampaignCard } from "./CampaignCard";
 import { upsertCampaign } from "../actions";
 import type { Campaign } from "../types";
 
 // Admin authoring form (PRD §7.5) with a live broker-card preview using
 // the same CampaignCard component the broker app renders. State holds the
-// draft and the preview re-renders on every change.
+// draft and the preview re-renders on every change. Submit passes
+// FormData straight to upsertCampaign — <SubmitButton> handles pending
+// state via useFormStatus.
 
 type CampaignAdminFormProps = {
   campaign?: Campaign;
@@ -28,7 +30,6 @@ const KIND_OPTIONS = [
 ];
 
 export function CampaignAdminForm({ campaign }: CampaignAdminFormProps) {
-  const [pending, setPending] = useState(false);
   const [draft, setDraft] = useState<Campaign>({
     id: campaign?.id ?? "",
     tag: campaign?.tag ?? "",
@@ -48,15 +49,7 @@ export function CampaignAdminForm({ campaign }: CampaignAdminFormProps) {
 
   return (
     <form
-      action={async (formData) => {
-        setPending(true);
-        try {
-          await upsertCampaign(formData);
-        } catch (err) {
-          setPending(false);
-          throw err;
-        }
-      }}
+      action={upsertCampaign}
       className="grid grid-cols-1 gap-5 lg:grid-cols-[1fr_280px]"
     >
       <input type="hidden" name="id" defaultValue={campaign?.id ?? ""} />
@@ -172,16 +165,14 @@ export function CampaignAdminForm({ campaign }: CampaignAdminFormProps) {
         <div className="rounded-2xl bg-bg p-4">
           <CampaignCard campaign={draft} />
         </div>
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
           full
-          type="submit"
-          disabled={pending}
           iconRight={<Icon name="arrow-right" size={18} />}
         >
-          {pending ? "Saving…" : campaign ? "Save changes" : "Create campaign"}
-        </Button>
+          {campaign ? "Save changes" : "Create campaign"}
+        </SubmitButton>
       </div>
     </form>
   );

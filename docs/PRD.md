@@ -672,6 +672,17 @@ analytics, native app wrappers, AWS migration for video/scale.
   `app/(admin)/admin/layout.tsx` is `'use client'` so it can call
   `usePathname` and pass `route` to `<AdminShell>`. Pages stay server
   components; the client touchpoint is the layout only.
+- **[27 May 2026]** **Admin form `action={…}` convention** (Next.js 16
+  gotcha). Server actions are passed **directly** as
+  `<form action={serverAction}>`. Wrapping in an inline async closure
+  that captures local React state (e.g. `setPending`) breaks at the
+  `<form>` element with a misleading `TypeError: Failed to fetch` —
+  Next 16 can't serialise the closure across the server-action
+  boundary. Pending state comes from React's `useFormStatus` hook
+  inside a new shared `<SubmitButton>` primitive. Applies to all six
+  admin authoring forms. Forms that need client-side mediation before
+  submit (e.g. broker BookingForm) keep using
+  `<form onSubmit>` + `useTransition`.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at
   launch — Phase 1 seed uses all 4 indexed projects from the seed

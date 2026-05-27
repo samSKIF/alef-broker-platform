@@ -10,6 +10,7 @@ export { Icon } from "./Icon";
 export type { IconName } from "./Icon";
 export { Logo } from "./Logo";
 export { Progress } from "./Progress";
+export { SubmitButton } from "./SubmitButton";
 export { TabBar } from "./TabBar";
 export { TierBadge } from "./TierBadge";
 export type { Tier } from "./TierBadge";

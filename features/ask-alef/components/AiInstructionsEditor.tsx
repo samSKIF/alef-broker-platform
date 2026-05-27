@@ -1,12 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { Button, Card, Icon } from "@/components/shared";
+import { Card, Icon, SubmitButton } from "@/components/shared";
 import { updateAiConfig } from "../actions";
 import type { AiConfig } from "../types";
 
-// Edits the singleton ai_config row (PRD §1.5.8). Live preview of the
-// current values; submit calls updateAiConfig.
+// Edits the singleton ai_config row (PRD §1.5.8). Server action runs on
+// submit and revalidates the page; the form re-mounts with fresh values
+// from the DB. No client closure around the action — Next.js 16 can't
+// serialise one.
 
 const MODEL_OPTIONS = [
   { value: "gpt-4o-mini", label: "gpt-4o-mini · cheap, fast" },
@@ -16,27 +18,13 @@ const MODEL_OPTIONS = [
 ];
 
 export function AiInstructionsEditor({ config }: { config: AiConfig }) {
-  const [pending, setPending] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [instructions, setInstructions] = useState(config.instructions);
   const [model, setModel] = useState(config.model);
   const [temperature, setTemperature] = useState(config.temperature);
   const [maxTokens, setMaxTokens] = useState(config.max_output_tokens);
 
   return (
-    <form
-      action={async (formData) => {
-        setPending(true);
-        setSaved(false);
-        try {
-          await updateAiConfig(formData);
-          setSaved(true);
-        } finally {
-          setPending(false);
-        }
-      }}
-      className="space-y-5"
-    >
+    <form action={updateAiConfig} className="space-y-5">
       <Card pad={22}>
         <SectionTitle title="System instructions" />
         <div className="mb-3 text-[12px] leading-relaxed text-ink-3">
@@ -111,20 +99,13 @@ export function AiInstructionsEditor({ config }: { config: AiConfig }) {
       </div>
 
       <div className="flex items-center justify-end gap-3">
-        {saved && (
-          <span className="text-[12px] font-semibold text-success">
-            ✓ Saved
-          </span>
-        )}
-        <Button
+        <SubmitButton
           kind="primary"
           size="lg"
-          type="submit"
-          disabled={pending}
           iconRight={<Icon name="check" size={16} />}
         >
-          {pending ? "Saving…" : "Save instructions"}
-        </Button>
+          Save instructions
+        </SubmitButton>
       </div>
     </form>
   );
