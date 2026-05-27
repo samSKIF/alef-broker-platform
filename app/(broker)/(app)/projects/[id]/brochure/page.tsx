@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { Icon } from "@/components/shared";
 import { BrochureShareClient } from "@/features/brochures";
-import { getBrokerById } from "@/features/brokers/queries";
 import { getProjectById } from "@/features/projects/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.10 — Branded brochure share for a specific project. Header with
 // back nav, then the client-side brochure preview / share UX.
@@ -17,13 +16,10 @@ export default async function BrochureSharePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
   const [broker, project] = await Promise.all([
-    getBrokerById(brokerId),
+    requireBroker(),
     getProjectById(id),
   ]);
-  if (!broker) redirect("/welcome");
   if (!project) notFound();
 
   return (

@@ -1,4 +1,3 @@
-import { redirect } from "next/navigation";
 import {
   AppHeader,
   Avatar,
@@ -15,11 +14,11 @@ import {
   getBrokerBreakdown,
   listBrokerActivity,
 } from "@/features/engagement/queries";
-import { getBrokerById } from "@/features/brokers/queries";
 import { listPublishedProjects } from "@/features/projects/queries";
 import { listPublishedModules } from "@/features/training/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
+import { signOutBroker } from "@/features/brokers";
 
 // PRD §6.14 — Activity dashboard. Engagement ring · breakdown bars · stat
 // tiles · recent-activity timeline.
@@ -55,17 +54,14 @@ const TYPE_LABEL: Record<string, { verb: string; icon: IconName; tone: string }>
 };
 
 export default async function ActivityPage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, breakdown, activity, projects, modules, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
-    getBrokerBreakdown(brokerId),
-    listBrokerActivity(brokerId, 20),
+  const broker = await requireBroker();
+  const [breakdown, activity, projects, modules, notifCount] = await Promise.all([
+    getBrokerBreakdown(broker.id),
+    listBrokerActivity(broker.id, 20),
     listPublishedProjects(),
     listPublishedModules(),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
 
   const projectName = new Map(projects.map((p) => [p.id, p.name]));
   const moduleName = new Map(modules.map((m) => [m.id, m.title]));
@@ -166,6 +162,19 @@ export default async function ActivityPage() {
             ))}
           </Card>
         )}
+      </div>
+
+      {/* Sign-out row (PROJECT_PLAN 2.1). Lives at the bottom of the
+          activity tab — least likely place for an accidental tap. */}
+      <div className="px-5 pb-2 pt-2">
+        <form action={signOutBroker}>
+          <button
+            type="submit"
+            className="w-full rounded-md py-3 text-center text-[12.5px] font-semibold text-ink-3 underline decoration-ink-4 underline-offset-2 hover:text-ink"
+          >
+            Sign out
+          </button>
+        </form>
       </div>
     </>
   );

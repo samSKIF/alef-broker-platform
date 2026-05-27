@@ -1,9 +1,8 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Card, Icon } from "@/components/shared";
 import { NotificationRow } from "@/features/notifications";
 import { listSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.13 — In-app notification feed. Real device push is Phase 2; for
 // Phase 1 we render the list from the notifications table.
@@ -11,8 +10,7 @@ import { getBrokerIdFromCookie } from "@/lib/dummy-account";
 export const dynamic = "force-dynamic";
 
 export default async function NotificationsPage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
+  await requireBroker();
   const notifications = await listSentNotifications();
 
   return (

@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.6 + 1.7.1 done. Ask Alef AI scope expanded (PRD §6.6 update): the route handler now injects fresh modules + campaigns + tier ladder + the current broker's name/tier/points/completed-modules into the system prompt on every request, in addition to the existing brochures + admin-editable instructions. New shared `features/brokers/tiers.ts` is the single source of truth for the tier ladder + points rules (imported by `/home` and the AI route). Admin-editable "Points & tier program" `ai_source` lets HQ refine the loyalty-program copy without code changes. Build + TypeScript clean. 55 / 55 functional Phase-1 items done. **BLOCKED on Samir** for 1.7.2–1.7.4 — Vercel build still missing `/admin/*` routes; needs Vercel-side diagnosis (see WORKLOG).**
+**Phase 1 · sections 1.0–1.6 + 1.7.1 done. PROJECT_PLAN 2.1 (real broker auth) brought forward from Phase 2: Supabase Auth replaces the dummy `broker_id` cookie. New `/signup` (email + password + confirm) → `/onboarding/name` (profile capture, now writes broker row linked to auth.users.id) → `/onboarding/done` → `/home`. New `/login` for returning brokers. "Continue as Layla" still works via a real provisioned auth account (creds in env). Sign-out button at the bottom of /activity. Middleware auto-refreshes the JWT cookie on every navigation. All 13 broker-app pages migrated from `getBrokerIdFromCookie` to `requireBroker` / `getCurrentBroker`; the old `lib/dummy-account.ts` is deleted. Build + TypeScript clean. 55 / 55 functional Phase-1 items done + 2.1 closed. **BLOCKED on Samir** for 1.7.2–1.7.4 (Vercel `/admin` 404 still under diagnosis) and one task for Samir: add `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` to Vercel env so the live deploy's demo button works.**
 
 ---
 
@@ -50,7 +50,7 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ### 1.3 — Broker app (mobile PWA)
 - [x] 1.3.1 Splash screen (animated logo, auto-advance) — `/` reads broker cookie and routes to `/welcome` or `/home` after a 3.8s animation (copper aurora, twinkles, expanding rings, logo fade-in, bilingual taglines).
 - [x] 1.3.2 Onboarding: Welcome — `/welcome` hero photo + Alef logo overlay + "Get started" CTA.
-- [x] 1.3.3 Onboarding: Name capture — `/onboarding/name` controlled form calling the `onboardBroker` server action; inserts a Bronze broker, sets the `broker_id` cookie. Four fields per PRD §6.3: Full name, Role, Brokerage (all required), Profile photo (optional). Photo uploads to the new `broker-photos` Storage bucket and is stored at `brokers.photo_url`; the form was shipped without the photo field in the original 1.3.3 build and back-filled afterwards.
+- [x] 1.3.3 Onboarding: Name capture — `/onboarding/name` controlled form calling the `onboardBroker` server action; inserts a Bronze broker linked to the current Supabase Auth user (via `user_id`). Four fields per PRD §6.3: Full name, Role, Brokerage (all required), Profile photo (optional). Photo uploads to the `broker-photos` Storage bucket. The pre-2.1 build set a dummy `broker_id` cookie here; the post-2.1 build inherits the session from /signup and only persists profile.
 - [x] 1.3.4 Onboarding: Welcome message — `/onboarding/done` "Ahlan, [name]" + Bronze enrollment + two starter actions.
 - [x] 1.3.5 App shell + bottom tab bar + navigation router — `app/(broker)/(app)/layout.tsx` wraps every authenticated screen in `PhoneShell` + `<TabBar>`; new `AppHeader` and `TabBar` primitives added to `/components/shared`. Tab badges (pending Academy modules + sent-notification count) computed in the layout.
 - [x] 1.3.6 Home dashboard — `/home` with greeting (date + "Good morning, X"), snapshot card (points + tier + progress to next tier via TIER ladder), 3-up quick actions (Book / Share brochure / Resume training).
@@ -109,7 +109,7 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ## PHASE 2 — Productionization (after CEO buy-in)
 > Do NOT build these during Phase 1. Listed so they are not forgotten.
 
-- [ ] 2.1 Real broker authentication + RERA card verification
+- [x] 2.1 Real broker authentication (brought forward into Phase 1 — see WORKLOG 2026-05-28). **Email + password via Supabase Auth.** `auth.users` linked to `public.brokers.user_id`. New `/signup`, `/login`, sign-out button in /activity. Middleware auto-refreshes JWT cookies. Demo affordance ("Continue as Layla") now signs in as a real provisioned auth account (`layla@alef-demo.com`, password in env). **RERA card verification deferred to Phase 2** — manual review workflow, not blocking demo.
 - [ ] 2.2 Real device push notifications (web-push + service worker)
 - [ ] 2.3 Quiz-taking flow inside Academy modules (with scoring → points)
 - [ ] 2.4 Real booking calendar (slots, availability, real reminders)

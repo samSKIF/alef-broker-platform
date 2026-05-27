@@ -1,10 +1,8 @@
-import { redirect } from "next/navigation";
 import { AppHeader, Chip } from "@/components/shared";
 import { FeaturedProjectCard, ProjectRowCard } from "@/features/projects";
 import { listPublishedProjects } from "@/features/projects/queries";
-import { getBrokerById } from "@/features/brokers/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.8 — Projects list. Header, filter chips (static for Phase 1),
 // featured project card, then a list of the rest.
@@ -21,14 +19,11 @@ const FILTER_CHIPS = [
 ];
 
 export default async function ProjectsPage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, projects, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
+  const broker = await requireBroker();
+  const [projects, notifCount] = await Promise.all([
     listPublishedProjects(),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
 
   // The query orders featured first, but be defensive.
   const featured = projects.find((p) => p.featured) ?? projects[0];

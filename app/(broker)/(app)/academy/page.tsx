@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   AppHeader,
   Card,
@@ -15,9 +14,8 @@ import {
   listCompletedModuleIds,
   listPublishedModules,
 } from "@/features/training/queries";
-import { getBrokerById } from "@/features/brokers/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.7 — Academy. Title · pending-for-you card · tier rail · segmented
 // control (Online video / Face-to-face) · module list.
@@ -48,15 +46,12 @@ function coverImageForModule(title: string): string | null {
 }
 
 export default async function AcademyPage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, modules, completed, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
+  const broker = await requireBroker();
+  const [modules, completed, notifCount] = await Promise.all([
     listPublishedModules(),
-    listCompletedModuleIds(brokerId),
+    listCompletedModuleIds(broker.id),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
 
   const brokerTier = broker.tier as Tier;
   const brokerRank = TIER_RANK[brokerTier] ?? 0;

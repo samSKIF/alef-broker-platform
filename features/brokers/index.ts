@@ -3,7 +3,13 @@
 // (see PRD §12 — "client-safe feature index" convention).
 
 export { BrokerRosterTable } from "./components/BrokerRosterTable";
-export { continueAsDemoBroker, onboardBroker } from "./actions";
+export {
+  continueAsDemoBroker,
+  onboardBroker,
+  signInBroker,
+  signOutBroker,
+  signUpBroker,
+} from "./actions";
 export {
   TIERS,
   TIER_BENEFITS,

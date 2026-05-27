@@ -202,11 +202,20 @@ Animated Alef logo loading screen. Auto-advances (~3.8s) to Welcome.
 ### 6.2 Onboarding: Welcome — `Phase 1`
 Hero photo, Alef logo, headline, "Get started" CTA.
 
-### 6.3 Onboarding: Name capture — `Phase 1`
-Fields: **Full name** (required), **Role** (required, dropdown), **Brokerage
-name** (required), **Profile photo** (optional, skippable).
-- POC: this creates a **dummy account** — no password. Persist to Supabase
-  `brokers` table (or local state if Supabase not yet wired — see Phase plan).
+### 6.3 Onboarding — `Phase 1`
+Three screens cover sign-up + profile + welcome:
+
+- **`/signup`** (created 2026-05-28, was Phase 2 item 2.1): email + password
+  + confirm. Calls Supabase Auth `signUp`; on success the session cookie is
+  set and we redirect to `/onboarding/name`.
+- **`/onboarding/name`** (profile capture): Full name (required), Role
+  (required, dropdown), Brokerage name (required), Profile photo (optional).
+  Submit links a `brokers` row to the current `auth.users` row via
+  `brokers.user_id`. If a broker hits this without a session, redirect to
+  `/signup`.
+- **`/login`** for returning brokers — email + password. After sign-in
+  `requireBroker()` decides: if profile exists → `/home`; if not →
+  `/onboarding/name` (resume an abandoned signup).
 
 ### 6.4 Onboarding: Welcome message — `Phase 1`
 "Ahlan, [name]" — confirms enrollment as a Bronze broker. Shows first actions.
@@ -744,6 +753,23 @@ analytics, native app wrappers, AWS migration for video/scale.
   "Get started", or the "Continue as Layla (demo)" affordance. If a
   broker clears their cookie they go through onboarding again — that
   is by-design for the POC.
+  **SUPERSEDED 2026-05-28**: real auth brought forward (see below).
+- **[28 May 2026]** **Real auth — PROJECT_PLAN 2.1 brought forward**
+  into Phase 1 at Samir's request. Email + password via Supabase
+  Auth, picked over magic-link / phone-OTP / Google-Apple OAuth
+  for familiarity + zero external dependencies. New screens
+  `/signup` + `/login`, sign-out button at the bottom of /activity,
+  middleware auto-refresh of the JWT cookie. `brokers.user_id`
+  links to `auth.users.id`. The seeded brokers (b2–b8) stay
+  intact with `user_id = null` — only Layla (b1) is linked to a
+  provisioned auth account so the "Continue as Layla" demo still
+  works (creds in env: `DEMO_BROKER_EMAIL` /
+  `DEMO_BROKER_PASSWORD`). RERA card verification stays in Phase 2
+  — manual review workflow not blocking the demo. RLS hardening
+  (PROJECT_PLAN 2.7) also still Phase 2. The pre-auth
+  `lib/dummy-account.ts` cookie helper was deleted; 13 broker-app
+  pages migrated to `requireBroker()` / `getCurrentBroker()` from
+  `lib/auth.ts`.
 - **[27 May 2026]** **AI scope expanded beyond projects (PRD §6.6
   update).** Original PRD §6.6 said "restrict answers to indexed
   Alef projects only". Samir confirmed in chat: the AI should also

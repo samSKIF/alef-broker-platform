@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import { PhoneShell, TabBar } from "@/components/shared";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 import { countSentNotifications } from "@/features/notifications/queries";
 import { listPublishedModules, listCompletedModuleIds } from "@/features/training/queries";
 
@@ -16,12 +15,11 @@ export default async function BrokerAppLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
+  const broker = await requireBroker();
 
   const [modules, completed, notifCount] = await Promise.all([
     listPublishedModules(),
-    listCompletedModuleIds(brokerId),
+    listCompletedModuleIds(broker.id),
     countSentNotifications(),
   ]);
   // Academy pending = modules they haven't completed yet (cap at 9 for UI sanity).

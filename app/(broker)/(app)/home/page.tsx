@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   AppHeader,
   Card,
@@ -11,10 +10,9 @@ import {
 import { CampaignCard } from "@/features/campaigns";
 import { AskAlefFAB } from "@/features/ask-alef";
 import { nextTier, progressTowardNext } from "@/features/brokers";
-import { getBrokerById } from "@/features/brokers/queries";
 import { listPublishedCampaigns } from "@/features/campaigns/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.5 + §6.7 — Home dashboard.
 // Header + dated greeting · "Alef · this week" carousel · snapshot card
@@ -36,14 +34,11 @@ const DATE_FMT = new Intl.DateTimeFormat("en-GB", {
 });
 
 export default async function HomePage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, campaigns, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
+  const broker = await requireBroker();
+  const [campaigns, notifCount] = await Promise.all([
     listPublishedCampaigns(),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
 
   const firstName = broker.name.split(/\s+/)[0] ?? broker.name;
   const next = nextTier(broker.points);

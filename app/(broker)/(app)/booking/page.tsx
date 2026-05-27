@@ -1,24 +1,19 @@
-import { redirect } from "next/navigation";
 import { AppHeader } from "@/components/shared";
 import { BookingForm } from "@/features/booking";
 import { listPublishedProjects } from "@/features/projects/queries";
-import { getBrokerById } from "@/features/brokers/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.11 — Book a visit. AppHeader + intro + the form.
 
 export const dynamic = "force-dynamic";
 
 export default async function BookingPage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, projects, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
+  const broker = await requireBroker();
+  const [projects, notifCount] = await Promise.all([
     listPublishedProjects(),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
 
   return (
     <>

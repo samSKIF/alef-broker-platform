@@ -1554,6 +1554,158 @@ sessions. Keep entries concise but complete.
     airplane-mode → you should land on the branded "You're offline"
     screen instead of Safari's default error page.
 
+### [2026-05-28 02:00] — Real broker auth (PROJECT_PLAN 2.1 brought forward)
+- **Phase / Plan item:** Phase 2 · 2.1 — promoted into the Phase 1 demo build
+- **Status:** DONE
+- **What I did:** Replaced the dummy `broker_id` cookie with real
+  Supabase Auth (email + password). New signup/login screens, real
+  demo account, sign-out button, and a full migration of the 13
+  broker-app pages that used to read the cookie.
+
+  **DB migration `add_real_auth_link_brokers_provision_demo`:**
+  - `brokers.user_id uuid references auth.users(id) on delete set null`,
+    + an index. Nullable so the 7 seeded brokers (b2–b8) don't need
+    placeholder auth rows.
+  - Provisioned Layla's `auth.users` row idempotently:
+    `email='layla@alef-demo.com'`, password hash via
+    `crypt('AlefDemo2026!', gen_salt('bf'))`, `email_confirmed_at=now()`,
+    matching `auth.identities` row for the email provider.
+  - Linked broker `b1` → Layla's `auth.users.id`.
+
+  **New install + helpers:**
+  - `npm install @supabase/ssr` (0.10.3).
+  - `lib/supabase/ssr.ts` — `createSupabaseSessionClient()` using the
+    cookies adapter. Server Components catch the cookie-set throw;
+    Server Actions + Route Handlers write cookies as normal.
+  - `lib/auth.ts` — `getCurrentBroker()` (joins auth user → broker
+    row via `user_id`, returns null if no session), `requireBroker()`
+    (redirects to `/welcome` on no session, `/onboarding/name` if
+    signed in but no profile — resume flow), `signOutCurrentUser()`.
+  - `middleware.ts` — runs Supabase's `auth.getUser()` on every
+    navigation so the JWT cookie auto-refreshes. Matcher excludes
+    Next internals + static assets + icon/manifest/SW routes.
+
+  **New screens + actions** (all in `features/brokers/actions.ts`):
+  - `signUpBroker(formData)` → `supabase.auth.signUp` → redirects
+    `/onboarding/name`.
+  - `signInBroker(formData)` → `signInWithPassword` → `/home`.
+    Generic error message ("Email or password is incorrect") so the
+    UI doesn't reveal whether an address is registered.
+  - `signOutBroker()` → `auth.signOut()` → `/welcome`.
+  - `continueAsDemoBroker()` (rewritten) → real `signInWithPassword`
+    using `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` from env.
+  - `onboardBroker(formData)` (rewritten) → reads current auth user,
+    UPSERTs a broker row with `user_id` link. Idempotent: if the
+    broker re-runs onboarding (e.g. they bailed and came back) their
+    row is updated, not duplicated.
+  - `/signup` + `/login` pages + their `_form.tsx` client forms.
+    Email field uses `text-base` (16px) to avoid iOS auto-zoom-on-focus
+    (the bug we fixed earlier this session).
+  - `/welcome` updated: "Get started" → `/signup`, new
+    "Already enrolled? Log in" link, "Continue as Layla" still works.
+  - Sign-out row added to `/activity` bottom — quiet underline-only
+    affordance so it doesn't compete with the data viz above.
+
+  **Cookie → session migration** (the surgical sweep):
+  - 13 broker-app files swapped from
+    `getBrokerIdFromCookie()` + `getBrokerById()` → `requireBroker()`:
+    `app/(broker)/page.tsx` (splash),
+    `app/(broker)/(app)/layout.tsx`,
+    `app/(broker)/(app)/home/page.tsx`,
+    `app/(broker)/(app)/academy/page.tsx`,
+    `app/(broker)/(app)/academy/[id]/page.tsx`,
+    `app/(broker)/(app)/projects/page.tsx`,
+    `app/(broker)/(app)/projects/[id]/brochure/page.tsx`,
+    `app/(broker)/(app)/booking/page.tsx`,
+    `app/(broker)/(app)/notifications/page.tsx`,
+    `app/(broker)/(app)/activity/page.tsx`,
+    `app/(broker)/onboarding/done/page.tsx`,
+    `app/(broker)/ask-alef/page.tsx`,
+    `app/api/ask-alef/route.ts` (uses `getCurrentBroker()` so anon
+    callers still get the public catalog blocks).
+  - `lib/dummy-account.ts` deleted (orphaned by the sweep).
+  - `features/brokers/index.ts` re-exports the new actions.
+
+  **Env additions:**
+  - `.env.example` + `.env.local`: `DEMO_BROKER_EMAIL`,
+    `DEMO_BROKER_PASSWORD`. Vercel needs these added too — see Notes.
+
+- **Files changed:**
+  - DB migration: `add_real_auth_link_brokers_provision_demo`
+  - new: `lib/supabase/ssr.ts`, `lib/auth.ts`, `middleware.ts`,
+    `app/(broker)/signup/page.tsx`, `app/(broker)/signup/_form.tsx`,
+    `app/(broker)/login/page.tsx`, `app/(broker)/login/_form.tsx`
+  - deleted: `lib/dummy-account.ts`
+  - rewritten: `features/brokers/actions.ts`,
+    `app/(broker)/welcome/page.tsx`
+  - migrated: 13 broker-app pages (see list above)
+  - `features/brokers/index.ts`, `types/database.ts` (regenerated),
+    `package.json` + lockfile
+  - docs: `docs/PROJECT_PLAN.md`, `docs/PRD.md`, `docs/WORKLOG.md`
+- **Decisions made:**
+  - **Email + password** chosen over magic link / phone OTP / OAuth
+    via AskUserQuestion picker. Most familiar to UAE brokers,
+    natural pairing with a Forgot password flow later. Documented
+    in PRD §12.
+  - **Keep demo "Continue as Layla" with real auth.** Picked over
+    "remove it" or "redirect to /signup with email pre-filled" so
+    the CEO demo opens with rich activity in one tap.
+  - **RLS stays off.** PROJECT_PLAN 2.7 owns RLS hardening; doing
+    that at the same time as the auth swap would have multiplied
+    risk. Supabase advisor still flags 8 tables as RLS-disabled;
+    that's the same posture we had pre-auth.
+  - **RERA verification deferred.** Phase 2 PROJECT_PLAN 2.1
+    grouped auth with RERA card verification; the latter is a
+    manual review workflow not blocking the demo, so the auth-only
+    portion is done and RERA remains in Phase 2.
+  - **`brokers.user_id` is nullable.** Seeded brokers b2–b8 have no
+    auth account; nullable FK lets them keep showing up in the
+    admin roster without us provisioning placeholder users.
+  - **Service-role client for the broker lookup in
+    `getCurrentBroker()`.** Phase 1 has RLS off so this is safe;
+    when 2.7 lands we'll add a `select your own broker row` policy
+    and switch the read to the session client.
+- **Tested:**
+  - `npx tsc --noEmit` PASS.
+  - `npx next build` PASS — 38 routes, middleware compiled as
+    `ƒ Proxy`. `/signup` + `/login` both prerender as static.
+  - DB probe confirmed: Layla's `auth.users` row exists,
+    `email_confirmed_at` set, `encrypted_password` present, broker
+    `b1` linked via `user_id`.
+- **Next:** Push to GitHub → Vercel auto-deploys → Samir adds
+  `DEMO_BROKER_EMAIL`/`DEMO_BROKER_PASSWORD` to Vercel env →
+  test the full flow on the live URL.
+- **Notes for the user:**
+
+  **You need to do TWO things on Vercel before the live demo works:**
+
+  1. **Add two env vars** in Vercel → Project Settings → Environment
+     Variables:
+     - `DEMO_BROKER_EMAIL` = `layla@alef-demo.com`
+     - `DEMO_BROKER_PASSWORD` = `AlefDemo2026!` (or whatever you
+       set in Supabase Dashboard if you've rotated it)
+
+     Tick all three environment boxes (Production / Preview /
+     Development).
+
+  2. **Redeploy** so the new env vars are picked up. Same path as
+     before — Deployments → ⋯ → Redeploy with cache off.
+
+  **What changes for users on the live URL:**
+  - `/welcome` → "Get started" now goes to `/signup`, not straight
+    to `/onboarding/name`. Brokers create an email+password account,
+    THEN fill in name/role/brokerage/photo.
+  - `/welcome` shows "Already enrolled? Log in" → `/login` for
+    returning brokers.
+  - `/welcome` "Continue as Layla (demo)" still works — it now
+    signs in as the real `layla@alef-demo.com` account.
+  - `/activity` has a quiet "Sign out" link at the bottom.
+
+  **Rotating Layla's demo password:**
+  Supabase Dashboard → Authentication → Users → `layla@alef-demo.com`
+  → "Send password recovery" or Edit User → set new password.
+  Update both `.env.local` and Vercel env, redeploy.
+
 ### [2026-05-28 00:30] — Fixes: onboarding starter-card clicks + profile photo field
 - **Phase / Plan item:** Phase 1 · 1.3.3 / 1.3.4 back-fills
 - **Status:** DONE

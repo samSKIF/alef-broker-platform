@@ -157,6 +157,7 @@ export type Database = {
           points: number
           role: string | null
           tier: string
+          user_id: string | null
         }
         Insert: {
           brokerage?: string | null
@@ -168,6 +169,7 @@ export type Database = {
           points?: number
           role?: string | null
           tier?: string
+          user_id?: string | null
         }
         Update: {
           brokerage?: string | null
@@ -179,6 +181,7 @@ export type Database = {
           points?: number
           role?: string | null
           tier?: string
+          user_id?: string | null
         }
         Relationships: []
       }

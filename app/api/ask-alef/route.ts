@@ -5,8 +5,7 @@ import {
   listEnabledAiSources,
 } from "@/features/ask-alef/queries";
 import type { ChatMessage } from "@/features/ask-alef/types";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
-import { getBrokerById } from "@/features/brokers/queries";
+import { getCurrentBroker } from "@/lib/auth";
 import {
   listPublishedModules,
   listCompletedModuleIds,
@@ -201,19 +200,19 @@ export async function POST(req: NextRequest) {
       : m,
   );
 
-  // Pull everything in parallel. Per-broker data only loads when the
-  // broker_id cookie is present (which it is for any authenticated
-  // broker-app session).
-  const brokerId = await getBrokerIdFromCookie();
-  const [config, sources, modules, campaigns, broker, completedModuleIds] =
+  // Pull everything in parallel. Per-broker context only loads when the
+  // Supabase Auth session resolves to a real broker row — anonymous
+  // callers (no auth cookie) still get projects/modules/campaigns/tiers
+  // but the "CURRENT BROKER" block degrades to a generic placeholder.
+  const broker = await getCurrentBroker();
+  const [config, sources, modules, campaigns, completedModuleIds] =
     await Promise.all([
       getAiConfig(),
       listEnabledAiSources(),
       listPublishedModules(),
       listPublishedCampaigns(),
-      brokerId ? getBrokerById(brokerId) : Promise.resolve(null),
-      brokerId
-        ? listCompletedModuleIds(brokerId)
+      broker
+        ? listCompletedModuleIds(broker.id)
         : Promise.resolve(new Set<string>()),
     ]);
 

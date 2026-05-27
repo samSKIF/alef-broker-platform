@@ -1,14 +1,13 @@
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { AppHeader, Card, Icon } from "@/components/shared";
 import { MarkCompleteButton } from "@/features/training";
 import {
   listCompletedModuleIds,
   listPublishedModules,
 } from "@/features/training/queries";
-import { getBrokerById } from "@/features/brokers/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.7 — Module detail. Video + quiz proper is Phase 2; for Phase 1
 // we show the module metadata and let the broker mark it complete (writes
@@ -22,15 +21,12 @@ export default async function ModuleDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const [broker, modules, completed, notifCount] = await Promise.all([
-    getBrokerById(brokerId),
+  const broker = await requireBroker();
+  const [modules, completed, notifCount] = await Promise.all([
     listPublishedModules(),
-    listCompletedModuleIds(brokerId),
+    listCompletedModuleIds(broker.id),
     countSentNotifications(),
   ]);
-  if (!broker) redirect("/welcome");
   const mod = modules.find((m) => m.id === id);
   if (!mod) notFound();
 

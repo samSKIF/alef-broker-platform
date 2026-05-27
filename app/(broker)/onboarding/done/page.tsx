@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import {
   Avatar,
   Button,
@@ -7,8 +6,7 @@ import {
   Icon,
   PhoneShell,
 } from "@/components/shared";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
-import { getBrokerById } from "@/features/brokers/queries";
+import { requireBroker } from "@/lib/auth";
 
 // PRD §6.4 — Welcome message. "Ahlan, [name]" + Bronze enrollment confirmation
 // + two starter-action cards (Start with Foundation, Explore Alef projects),
@@ -16,10 +14,7 @@ import { getBrokerById } from "@/features/brokers/queries";
 export const dynamic = "force-dynamic";
 
 export default async function OnboardingDonePage() {
-  const brokerId = await getBrokerIdFromCookie();
-  if (!brokerId) redirect("/welcome");
-  const broker = await getBrokerById(brokerId);
-  if (!broker) redirect("/welcome");
+  const broker = await requireBroker();
 
   const firstName = broker.name.split(/\s+/)[0] ?? broker.name;
 

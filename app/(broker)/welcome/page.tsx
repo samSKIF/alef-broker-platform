@@ -1,13 +1,14 @@
 import Image from "next/image";
+import Link from "next/link";
 import { Button, Icon, Logo, PhoneShell } from "@/components/shared";
 import { continueAsDemoBroker } from "@/features/brokers";
 
 // PRD §6.2 — Onboarding Welcome.
 // Hero photo top, brand logo overlay, headline + sub, "Get started" CTA →
-// /onboarding/name. Below: a tiny "demo as Layla Hassan" form button that
-// skips onboarding and signs in as the pre-seeded broker b1 — useful for
-// the CEO demo so the dashboard opens populated. Clearly labelled "Demo
-// shortcut" so a real broker doesn't tap it by accident.
+// /signup (was /onboarding/name in the pre-2.1 dummy-cookie flow). Below:
+// "Already enrolled? Log in" for returning brokers (PROJECT_PLAN 2.1),
+// and a tiny "demo as Layla Hassan" form button that signs in as the
+// pre-provisioned demo auth account so the CEO demo opens populated.
 
 export default function WelcomePage() {
   return (
@@ -51,7 +52,7 @@ export default function WelcomePage() {
           book site visits, all from one app.
         </p>
         <Button
-          href="/onboarding/name"
+          href="/signup"
           kind="accent"
           size="lg"
           full
@@ -60,10 +61,18 @@ export default function WelcomePage() {
           Get started
         </Button>
 
-        {/* Demo shortcut — POC-only. Skips onboarding and signs in as the
-            pre-seeded broker b1 (Layla Hassan) so the dashboard opens with
-            real activity. Form submit calls the continueAsDemoBroker
-            server action which sets the cookie + redirects. */}
+        <div className="mt-3 text-center text-[12.5px] text-ink-3">
+          Already enrolled?{" "}
+          <Link href="/login" className="font-semibold text-accent">
+            Log in
+          </Link>
+        </div>
+
+        {/* Demo shortcut — POC-only. Signs in as the pre-provisioned
+            demo auth account (layla@alef-demo.com, broker b1) so the
+            dashboard opens with real activity. The server action
+            uses Supabase Auth signInWithPassword under the hood;
+            credentials live in env (DEMO_BROKER_EMAIL/PASSWORD). */}
         <form
           action={continueAsDemoBroker}
           className="mt-3 flex justify-center"

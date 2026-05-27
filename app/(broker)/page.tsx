@@ -1,10 +1,10 @@
 import { Logo, PhoneShell } from "@/components/shared";
-import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { getCurrentBroker } from "@/lib/auth";
 import { SplashAutoAdvance } from "./_splash-auto-advance";
 
 // PRD §6.1 — Splash. Animated logo, copper aurora behind, faint twinkles,
 // concentric rings, "For brokers / للوسطاء" taglines. Auto-advances to
-// /welcome (or /home if a broker cookie already exists).
+// /welcome (or /home if a broker session already exists).
 
 // Twinkle constellation coordinates from the design's screens-splash.jsx.
 const TWINKLES: ReadonlyArray<readonly [number, number]> = [
@@ -16,8 +16,8 @@ const TWINKLES: ReadonlyArray<readonly [number, number]> = [
 export const dynamic = "force-dynamic";
 
 export default async function Splash() {
-  const brokerId = await getBrokerIdFromCookie();
-  const target = brokerId ? "/home" : "/welcome";
+  const broker = await getCurrentBroker();
+  const target = broker ? "/home" : "/welcome";
 
   return (
     <PhoneShell tone="dark">
