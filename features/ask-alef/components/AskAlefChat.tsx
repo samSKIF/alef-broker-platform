@@ -211,7 +211,11 @@ export function AskAlefChat() {
               placeholder="Ask Alef anything…"
               rows={1}
               disabled={streaming}
-              className="min-h-9 max-h-32 flex-1 resize-none bg-transparent px-3 py-2 text-[14px] leading-snug text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
+              // text-base (16px) is the iOS-Safari floor — anything
+              // smaller triggers the auto-zoom-on-focus that shifts the
+              // viewport and pushes the input off-screen when the
+              // keyboard opens.
+              className="min-h-9 max-h-32 flex-1 resize-none bg-transparent px-3 py-2 text-base leading-snug text-ink outline-none placeholder:text-ink-3 disabled:opacity-60"
             />
             <button
               type="submit"

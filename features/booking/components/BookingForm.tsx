@@ -67,7 +67,8 @@ export function BookingForm({ brokerId, projects }: BookingFormProps) {
         <select
           value={projectId}
           onChange={(e) => setProjectId(e.target.value)}
-          className="w-full appearance-none border-0 bg-transparent p-0 pt-2 text-[15px] font-semibold text-ink outline-none"
+          // text-base (16px) avoids iOS Safari's auto-zoom-on-focus.
+          className="w-full appearance-none border-0 bg-transparent p-0 pt-2 text-base font-semibold text-ink outline-none"
         >
           {projects.map((p) => (
             <option key={p.id} value={p.id}>
@@ -86,7 +87,8 @@ export function BookingForm({ brokerId, projects }: BookingFormProps) {
           value={date}
           onChange={(e) => setDate(e.target.value)}
           min={todayIso}
-          className="w-full border-0 bg-transparent p-0 pt-2 text-[15px] font-semibold text-ink outline-none"
+          // text-base (16px) avoids iOS Safari's auto-zoom-on-focus.
+          className="w-full border-0 bg-transparent p-0 pt-2 text-base font-semibold text-ink outline-none"
         />
       </Card>
 
