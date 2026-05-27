@@ -1,8 +1,18 @@
 import { ImageResponse } from "next/og";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
-// iOS home-screen icon (apple-touch-icon). PRD §5.1 navy ground + a copper
-// roundel framing the "A" — iOS auto-rounds the corners so we don't need
-// rounded-rect masking. 180px is the spec size.
+// iOS home-screen icon (apple-touch-icon). Real Alef wordmark on navy —
+// the logo is /public/logo-dark.png (white + copper, designed for dark
+// surfaces). iOS auto-rounds the corners so we don't need rounded-rect
+// masking. 180px is the spec size.
+//
+// Logo is read from disk at build time and inlined as a base64 data URL
+// so the static prerender doesn't need runtime fs access.
+
+const LOGO_DATA_URL = `data:image/png;base64,${readFileSync(
+  join(process.cwd(), "public/logo-dark.png"),
+).toString("base64")}`;
 
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
@@ -20,23 +30,16 @@ export default function AppleIcon() {
           justifyContent: "center",
         }}
       >
-        <div
-          style={{
-            width: 130,
-            height: 130,
-            borderRadius: "50%",
-            border: "3px solid #B6735C",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#B6735C",
-            fontSize: 86,
-            fontWeight: 700,
-            letterSpacing: "-0.04em",
-          }}
-        >
-          A
-        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={LOGO_DATA_URL}
+          alt="Alef"
+          // Satori (next/og) requires explicit numeric dimensions on
+          // <img>; "auto" silently drops the image. Logo is 500×210
+          // (2.381:1), so we set both axes from the canvas size.
+          width={137}
+          height={58}
+        />
       </div>
     ),
     { ...size },
