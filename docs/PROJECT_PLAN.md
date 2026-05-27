@@ -237,6 +237,14 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   were passing both `width`/`height` props AND a conflicting
   `style={{ height, width: "auto" }}`. Dropped the style override; the
   props alone govern the rendered size.
+- **[2026-05-27] next/image remotePatterns** now whitelists the
+  Supabase Storage host. Derived from
+  `process.env.NEXT_PUBLIC_SUPABASE_URL` at build time so a project
+  swap doesn't require a config edit; fallback is the wildcard
+  `*.supabase.co` for CI builds where the env var may not be set.
+  Required because admin uploads land at
+  `<project>.supabase.co/storage/v1/object/public/<bucket>/...` and
+  `<Image>` rejects external hosts by default.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.

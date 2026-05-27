@@ -1208,3 +1208,49 @@ sessions. Keep entries concise but complete.
   2. **The hydration warning is from a Chrome extension**
      (`myus-mall-extension`) — disable it on `localhost` or ignore.
      Doesn't affect production.
+
+### [2026-05-27 19:30] — Fix: whitelist Supabase Storage host for next/image
+- **Phase / Plan item:** Phase 1 · 1.5 follow-up — bug fix
+- **Status:** DONE
+- **What I did:** Samir's first project upload **succeeded**
+  (`POST /admin/projects/new 303 in 4.0s` — the body-size fix worked
+  end-to-end). But the resulting redirect to `/admin/projects` then
+  threw on `next/image`:
+  ```
+  Invalid src prop (https://qiowxcaofwjahlwycwbl.supabase.co/storage/…)
+  hostname "qiowxcaofwjahlwycwbl.supabase.co" is not configured under
+  images in your next.config.js
+  ```
+  Next.js's `<Image>` rejects external hosts by default. Whitelisted
+  the project's Supabase Storage hostname in `next.config.ts`:
+  ```ts
+  images: {
+    remotePatterns: [
+      supabaseHostname
+        ? { protocol: "https", hostname: supabaseHostname }
+        : { protocol: "https", hostname: "*.supabase.co" },
+    ],
+  }
+  ```
+  Hostname is derived from `process.env.NEXT_PUBLIC_SUPABASE_URL` at
+  build time so a project swap doesn't require a config edit; fallback
+  is the wildcard `*.supabase.co` for builds where the env var isn't
+  loaded yet (e.g. CI).
+- **Files changed:** `next.config.ts`, `docs/PROJECT_PLAN.md`,
+  `docs/WORKLOG.md`.
+- **Decisions made:**
+  - **Env-derived hostname over hardcode.** Keeps `next.config.ts`
+    portable when the Supabase project URL changes in production.
+  - **Wildcard fallback** to `*.supabase.co` if the env var isn't
+    set, rather than crashing the build.
+- **Tested:** `npm run build` PASS.
+- **Next:** Section 1.6 — verify round-trip + wire Realtime.
+- **Notes for the user:**
+  1. **Restart `npm run dev`** — `next.config` is **not** HMR'd.
+     After restart, open `/admin/projects` and your newly-uploaded
+     cover will render. The Logo / Image warnings from before were
+     also waiting on the restart.
+  2. **Bonus signal:** the upload itself worked — the `303` redirect
+     in your log confirms the project row was written and the file
+     landed in the `project-images` bucket. Supabase Storage is fully
+     wired end-to-end.
