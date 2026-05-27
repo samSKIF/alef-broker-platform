@@ -560,3 +560,235 @@ sessions. Keep entries concise but complete.
      1.4 starts.
   5. **Ready for 1.3?** Say "start 1.3" — that's the splash + onboarding
      + bottom-tab shell + Home / Academy / Projects / Activity screens.
+
+### [2026-05-27 10:00] — Section 1.3 done (Broker app, all 15 items)
+- **Phase / Plan item:** Phase 1 · 1.3 Broker app (1.3.1 – 1.3.15)
+- **Status:** DONE
+- **What I did:**
+  1. **Image-path resolution.** Confirmed the 5 source images Samir placed
+     in `/public/assets/` and applied a SQL `UPDATE` migration
+     (`prefix_image_paths_with_assets`) that prefixes
+     `projects.cover_image` and `campaigns.image` with `/assets/`. Verified
+     all 9 image references resolved (4 project covers + 4 campaign images
+     + 1 null commission card).
+  2. **Data layer.** Built `queries.ts` (server-only reads) +
+     `actions.ts` (`'use server'` writes) across the relevant features:
+     - `features/brokers` — `getBrokerById` (queries) + `onboardBroker`
+       (action: insert Bronze broker, set cookie, redirect).
+     - `features/projects` — `listPublishedProjects`, `getProjectById`.
+     - `features/campaigns` — `listPublishedCampaigns` + `CampaignCard`
+       component (image-led + commission variants).
+     - `features/training` — `listPublishedModules`,
+       `listModulesForProject`, `listCompletedModuleIds` (Set of
+       `module_completed` rows for a given broker).
+     - `features/notifications` — `listSentNotifications`,
+       `countSentNotifications`.
+     - `features/engagement` — `listBrokerActivity`, `getBrokerBreakdown`
+       (counts visit_booked / brochure_shared / module_completed) plus
+       `logActivity` action used by every write surface in the app.
+     - `features/booking` — `submitBooking` action (logs visit_booked,
+       redirects to confirmation with URL params).
+     - `features/brochures` — no actions of its own; share buttons call
+       `logActivity` directly.
+  3. **Cookie + Avatar.** `lib/dummy-account.ts` exposes `BROKER_COOKIE`,
+     `getBrokerIdFromCookie()`, `clearBrokerCookie()`. New `<Avatar>`
+     primitive renders initials with a copper background (size-scaled
+     font).
+  4. **Shell.** New `<AppHeader>` (logo + bell with red badge + avatar)
+     and `<TabBar>` (4-tab pill with usePathname() active detection +
+     optional per-tab badge counts) in `/components/shared`.
+     `<Button>` extended to accept an `href` prop so anchors don't end up
+     wrapping buttons. `PhoneShell` gained a `tone` prop (`light` / `dark`)
+     for the navy splash.
+  5. **1.3.1 Splash** (`/`) — copper aurora, faint constellation,
+     concentric copper rings, fading-in logo, copper hairline draw, "For
+     brokers" + "للوسطاء" taglines, shimmer + "Preparing your dashboard"
+     status. CSS `@keyframes` for the 8 animations land in
+     `app/globals.css`. Server component reads the cookie and decides
+     between `/welcome` and `/home`; client `<SplashAutoAdvance>` fires
+     `router.replace` after 3800 ms.
+  6. **1.3.2 Welcome** (`/welcome`) — `onboard-hero.webp` full-bleed
+     500 px hero with top scrim + bottom fade, Alef logo centred at top,
+     "Sign in" affordance, headline "Sell the communities of tomorrow",
+     copper accent "Broker · مرحبا" kicker, large copper CTA → name.
+  7. **1.3.3 Name capture** (`/onboarding/name`) — client form with
+     three required fields (Full name / Role / Brokerage), card-style
+     inputs, RERA-card hint card. Submit calls the `onboardBroker`
+     server action; the action inserts the broker, sets the cookie, and
+     redirects to `/onboarding/done`.
+  8. **1.3.4 Welcome message** (`/onboarding/done`) — server-renders
+     "Ahlan, <firstName>." with a 108-px copper-bordered initial avatar +
+     check badge, copy confirming Bronze enrollment, two starter-action
+     cards. CTA → `/home`.
+  9. **1.3.5 App shell** — `app/(broker)/(app)/layout.tsx` wraps every
+     authenticated page in `<PhoneShell>` and a floating `<TabBar>`.
+     Layout fetches modules + completed-set + notification count once
+     and passes badge counts to TabBar. Each page renders its OWN
+     `<AppHeader>` so detail pages (project detail, brochure share, etc.)
+     can substitute a back-button header without fighting the layout.
+  10. **1.3.6 + 1.3.7 Home** (`/home`) — date + "Good morning, <X>"
+      greeting, "Alef · this week" snap-scrolling carousel reading from
+      `campaigns`, dark snapshot card (points + tier + bar to next tier
+      with the new TIER ladder), 3-up quick actions (Book a visit / Share
+      brochure / Resume training). Quick actions are Link-wrapped Cards.
+  11. **1.3.8 Academy** (`/academy`) — "The Academy / Learn. Earn. Climb
+      the tiers." kicker, "Pending for you" card showing the first
+      uncompleted accessible module, tier-rail card with the dotted rail
+      + glow on current tier, segmented control (`<AcademyTabs>` client
+      component) toggling Online and Live module lists. New
+      `<ModuleCard>` (server) renders an 72-px tile with done/locked/play
+      overlay, `<LiveModuleCard>` renders a workshop with Reserve CTA.
+      Module detail at `/academy/[id]` shows metadata + reward + tier
+      requirement + the `<MarkCompleteButton>` client component (writes
+      `module_completed` then refreshes /academy).
+  12. **1.3.9 Projects** (`/projects`) — "Portfolio / Communities to
+      sell." with a count line, static filter chips for Phase 1, then
+      `<FeaturedProjectCard>` (200-px hero, status pill, Featured stamp,
+      3-up facts grid, units, Open / Share buttons) and `<ProjectRowCard>`
+      list rows (84-px thumb, status, name/location, units + From price,
+      dashed-border facts strip).
+  13. **1.3.10 Project detail** (`/projects/[id]`) — 280-px hero with
+      overlay back / share buttons + status pill on bottom-left, then
+      title / location / From, 3-up facts strip with copper icons,
+      `<ProjectDetailTabs>` client component with a sticky tab bar over
+      Overview / Units / Gallery / Training tabs. Training tab lists
+      project-linked modules. Bottom CTA "Share project brochure" deep-
+      links to `/projects/[id]/brochure`.
+  14. **1.3.11 Branded brochure share** (`/projects/[id]/brochure`) —
+      `<BrochureShareClient>` (client) renders the rotated brochure mock
+      with the project hero, logo, name kicker, broker footer (name +
+      brokerage), plus the unit-type chip filter and a personalisation
+      card showing the broker's identity. Bottom share bar:
+      `wa.me` deep link (WhatsApp), `mailto:` (Email), `navigator.share`
+      (More). Every share calls `logActivity({ type: 'brochure_shared',
+      meta: { channel, filter } })` and shows a "✓ Logged" toast.
+  15. **1.3.12 Booking** (`/booking`) — `<BookingForm>` (client) with
+      project picker (select), HTML date input with `min=today`, time-slot
+      grid (10:00–17:00), reminder toggle (custom switch). Submit calls
+      `submitBooking` action which writes `visit_booked` activity and
+      302's to `/booking/confirmation?project=…&date=…&time=…`.
+  16. **1.3.13 Booking confirmation** (`/booking/confirmation`) — copper
+      check medallion + "You're on the list" / "Visit booked" / explainer,
+      dashed-border ticket card with Project / Location / Date / Time /
+      With, a sparkle tip card noting the activity was logged, "See my
+      activity" + "Back to home" CTAs.
+  17. **1.3.14 Notifications feed** (`/notifications`) — back-arrow
+      header, `<NotificationRow>` cards listing every sent notification
+      (icon + title + body + relative time). Bell badge on AppHeader
+      already shows count from the layout.
+  18. **1.3.15 Activity dashboard** (`/activity`) — kicker + "Effort,
+      measured." title, identity-card combining a new `<EngagementRing>`
+      SVG (renders the broker's stored 0–100 score) with the avatar +
+      brokerage + tier-pill, Breakdown bars (visits / shares / modules
+      vs target ceilings 30/100/24, brand-tinted), 3 stat tiles, recent-
+      activity timeline (project + module names joined client-side via
+      Maps).
+  19. **Convention shift.** Hit a Next.js bundling error when a client
+      form imported `@/features/brokers` (which barrelled in a
+      `server-only` queries module). Resolution: feature `index.ts`
+      files re-export ONLY client-safe content (types + actions + UI
+      components); server-only reads are deep-imported by server
+      consumers via `@/features/<name>/queries`. Applied to all 8 feature
+      indexes.
+  20. **Lint guarantees.** Two errors caught and fixed:
+      - `module` reserved variable in the academy/[id] page → renamed to
+        `mod`.
+      - Unused `Link` import in `FeaturedProjectCard` → removed.
+- **Files changed:**
+  - **Created (pages):** `app/(broker)/page.tsx` (splash),
+    `app/(broker)/_splash-auto-advance.tsx`,
+    `app/(broker)/welcome/page.tsx`,
+    `app/(broker)/onboarding/name/page.tsx`,
+    `app/(broker)/onboarding/name/_form.tsx`,
+    `app/(broker)/onboarding/done/page.tsx`,
+    `app/(broker)/brochure/page.tsx` (redirect to featured project),
+    `app/(broker)/(app)/layout.tsx`,
+    `app/(broker)/(app)/home/page.tsx`,
+    `app/(broker)/(app)/academy/page.tsx`,
+    `app/(broker)/(app)/academy/[id]/page.tsx`,
+    `app/(broker)/(app)/projects/page.tsx`,
+    `app/(broker)/(app)/projects/[id]/page.tsx`,
+    `app/(broker)/(app)/projects/[id]/brochure/page.tsx`,
+    `app/(broker)/(app)/booking/page.tsx`,
+    `app/(broker)/(app)/booking/confirmation/page.tsx`,
+    `app/(broker)/(app)/notifications/page.tsx`,
+    `app/(broker)/(app)/activity/page.tsx`.
+  - **Created (shared):** `components/shared/AppHeader.tsx`,
+    `components/shared/Avatar.tsx`, `components/shared/TabBar.tsx`.
+  - **Created (feature components):**
+    `features/campaigns/components/CampaignCard.tsx`,
+    `features/projects/components/{FeaturedProjectCard,ProjectRowCard,ProjectDetailTabs}.tsx`,
+    `features/training/components/{ModuleCard,LiveModuleCard,AcademyTabs,MarkCompleteButton}.tsx`,
+    `features/brochures/components/BrochureShareClient.tsx`,
+    `features/booking/components/BookingForm.tsx`,
+    `features/notifications/components/NotificationRow.tsx`,
+    `features/engagement/components/EngagementRing.tsx`.
+  - **Created (data layer):**
+    `features/brokers/{queries.ts,actions.ts,types.ts}`,
+    `features/projects/{queries.ts,types.ts}`,
+    `features/campaigns/{queries.ts,types.ts}`,
+    `features/training/{queries.ts,types.ts}`,
+    `features/notifications/{queries.ts,types.ts}`,
+    `features/engagement/{queries.ts,actions.ts,types.ts}`,
+    `features/booking/actions.ts`,
+    `lib/dummy-account.ts`.
+  - **Rewrote:** every `features/<name>/index.ts` (client-safe surface);
+    `components/shared/{Button.tsx,PhoneShell.tsx}` (href prop + tone
+    prop); `components/shared/index.ts` (added Avatar, AppHeader, TabBar);
+    `app/globals.css` (splash keyframes).
+  - **Removed:** `app/page.tsx` (the old design-system check —
+    superseded by `/` = splash); 8 `components/.gitkeep` placeholders
+    inside the feature folders.
+  - **DB migration:** `prefix_image_paths_with_assets`.
+  - **Docs:** `docs/PRD.md` §12 (8 new decisions),
+    `docs/PROJECT_PLAN.md` (1.3 ticks + new outstanding follow-ups),
+    `docs/WORKLOG.md` (this entry).
+- **Decisions made:**
+  - **URL convention** — broker app at root URLs (no `/broker/` prefix);
+    admin will get `/admin/*` in 1.5.
+  - **Image columns store `/assets/<filename>`** rather than bare
+    filenames — keeps `<Image src={row.cover_image}>` working without a
+    code-level prefix.
+  - **Cookie-based dummy account** — `broker_id` cookie set on onboard,
+    read on every page. Phase 2 replaces with real auth.
+  - **Five-file feature shape** — added `actions.ts` (`'use server'`)
+    next to `queries.ts` (`server-only`) for features that need writes
+    from client components.
+  - **Client-safe feature indexes** — indexes re-export only the
+    client-safe surface; server consumers deep-import `./queries`.
+  - **Tier ladder thresholds** — Bronze 0 / Silver 1000 / Gold 2500 /
+    Preferred 5000.
+  - **Initial-based avatars** — per Samir's explicit instruction; no
+    photos in seed.
+  - **Quiz-taking deferred** — module detail shows a "Mark complete"
+    button; quiz UI is Phase 2 (PRD §6.7).
+  - **Engagement score is stored, not recomputed** — display uses
+    `brokers.engagement_score` for Phase 1; live recompute is Phase 2.
+- **Tested:**
+  - `npm run build` → PASS (Next.js 16.2.6 / Turbopack, 5 static + 11
+    dynamic routes, TypeScript clean, no warnings).
+  - `npm run lint` → PASS (0 errors / 0 warnings).
+  - Visual smoke not performed (no headless browser this turn). Samir
+    can `npm run dev` to walk the flow; everything compiles and the
+    DB-connected pages render against the live seed.
+- **Next:** Section **1.4 — Ask Alef AI assistant.** First plan item
+  (1.4.1) is `[needs user]` — Samir creates / shares an OpenAI API key.
+- **Notes for the user:**
+  1. **Walking the demo.** Run `npm run dev`, open http://localhost:3000.
+     Splash → Welcome → fill the name form → land at /home. From there
+     the bottom tabs reach Home / Academy / Projects / Activity. The bell
+     in AppHeader opens /notifications.
+  2. **Try the wow moments.** From the project detail page, tap "Share
+     project brochure" → see the personalised preview + share buttons.
+     From /booking, fill a slot → land on the ticket confirmation.
+  3. **Fresh accounts look sparse.** A new broker has 0 points and no
+     activity, so the Home snapshot card sits at 0 / 1000 and the
+     Activity dashboard reads zero. For the CEO demo we'll want the
+     "Continue as Layla" affordance (see PROJECT_PLAN outstanding
+     follow-ups) — flag for 1.8.1.
+  4. **The seeded brokers (b1–b8) already have rich activity** for any
+     direct dashboard inspection. Setting the cookie via devtools
+     (`document.cookie='broker_id=b1; path=/'`) signs in as Layla.
+  5. **Ready for 1.4?** Say "start 1.4" — that's the Ask Alef AI
+     assistant. 1.4.1 will need an OpenAI API key from you (server-only;
+     I'll guide).

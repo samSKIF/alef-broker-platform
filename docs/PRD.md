@@ -569,6 +569,53 @@ analytics, native app wrappers, AWS migration for video/scale.
   Phase 1 (intentional — POC has dummy onboarding, no real users). Supabase
   advisor flagged this as critical; PROJECT_PLAN item 2.7 owns the
   remediation in Phase 2.
+- **[27 May 2026]** **URL routing.** Broker app routes live at root URLs
+  (`/`, `/home`, `/projects`, `/projects/[id]`, `/projects/[id]/brochure`,
+  `/booking`, `/booking/confirmation`, `/notifications`, `/activity`,
+  `/academy`, `/academy/[id]`, `/welcome`, `/onboarding/name`,
+  `/onboarding/done`, `/brochure`). Admin will live under `/admin/*` in 1.5.
+  PRD §2's `(broker)` and `(admin)` route groups stay as folder names —
+  they're URL-invisible. The old `/` design-system check page from 1.1 was
+  replaced by the splash.
+- **[27 May 2026]** **Image-path resolution.** Database stores full
+  `/assets/<filename>` paths in `projects.cover_image` and `campaigns.image`
+  rather than bare filenames. Decision: keep the resolution in the DB so
+  the React `<Image>` consumer can use the column verbatim; if we later
+  migrate to Supabase Storage URLs, it's just another UPDATE.
+- **[27 May 2026]** **Dummy account persistence.** A `broker_id` cookie
+  (set by the `onboardBroker` server action on submit) carries identity
+  across requests. Read server-side via `getBrokerIdFromCookie()` in
+  `lib/dummy-account.ts`. No `httpOnly` so the demo can drop it from
+  devtools to re-run onboarding. Phase 2 replaces with real Supabase Auth.
+- **[27 May 2026]** **Five-file feature shape.** PRD §2 specifies four
+  files per feature (`components/`, `queries.ts`, `types.ts`, `index.ts`).
+  Features that need writes callable from client components (brokers,
+  engagement, booking) carry an additional `actions.ts` (`'use server'`).
+  Without the split the index would barrel both server-only reads and
+  client-callable writes, which Next.js 16 / React Server Components
+  refuses.
+- **[27 May 2026]** **Client-safe feature indexes.** All feature `index.ts`
+  files re-export only types + actions + UI components (i.e. content safe
+  to bundle into client components). Server-only reads in `queries.ts` are
+  deep-imported by server consumers: `import { listX } from
+  '@/features/<name>/queries'`. The "import only from index.ts" rule in
+  PRD §2 holds for the client-facing surface.
+- **[27 May 2026]** **Tier ladder thresholds** (used by the snapshot
+  card, Academy tier rail, and the next-tier copy): `Bronze 0 / Silver
+  1000 / Gold 2500 / Preferred 5000`. Derived from the design's commission
+  card ("Gold now from 2,500 pts") and the seeded brokers' points
+  distribution. To refine with Alef alongside the engagement-score
+  weights.
+- **[27 May 2026]** **Initial-based avatars.** Seeded brokers have no
+  `photo_url`. New `<Avatar>` primitive in `/components/shared` derives
+  initials from the name and renders them on a copper background.
+- **[27 May 2026]** **Quiz-taking deferred.** Module detail at
+  `/academy/[id]` shows a single "Mark complete" CTA that writes
+  `module_completed` activity (per PRD §6.7's "Phase 1 marks completion
+  via a simple action"). Full quiz UI is Phase 2.
+- **[27 May 2026]** **Engagement score is stored, not recomputed.** The
+  Activity dashboard reads `brokers.engagement_score` as a static column
+  for Phase 1; live recompute via the PRD §8.8 formula is Phase 2.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at launch.
 

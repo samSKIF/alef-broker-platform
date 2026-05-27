@@ -108,3 +108,79 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* ── Splash screen animations (PRD §6.1; design screens-splash.jsx). ─────
+   Kept here rather than per-component so Tailwind v4 picks them up at build.
+   Used only by app/(broker)/page.tsx. */
+@keyframes splashGlow {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: translateX(-50%) scale(1);
+  }
+  50% {
+    opacity: 0.36;
+    transform: translateX(-50%) scale(1.05);
+  }
+}
+@keyframes splashRing {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.9;
+    border-width: 1.5px;
+  }
+  70% {
+    opacity: 0.15;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+    border-width: 0.5px;
+  }
+}
+@keyframes splashTwinkle {
+  0% {
+    opacity: 0.15;
+  }
+  100% {
+    opacity: 0.9;
+  }
+}
+@keyframes splashLogoFade {
+  0% {
+    opacity: 0;
+    transform: translateY(6px) scale(0.985);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+@keyframes splashLine {
+  to {
+    width: 64px;
+  }
+}
+@keyframes splashFade {
+  to {
+    opacity: 1;
+  }
+}
+@keyframes splashFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes splashShimmer {
+  0% {
+    left: -40%;
+  }
+  100% {
+    left: 100%;
+  }
+}

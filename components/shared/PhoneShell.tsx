@@ -10,14 +10,24 @@ import type { ReactNode } from "react";
 type PhoneShellProps = {
   children: ReactNode;
   className?: string;
+  /** "light" (default — Wild Sand bg, ink text) for app screens; "dark" (navy
+   *  bg, white text) for the splash and other ink-on-dark moments. */
+  tone?: "light" | "dark";
 };
 
-export function PhoneShell({ children, className = "" }: PhoneShellProps) {
+export function PhoneShell({
+  children,
+  className = "",
+  tone = "light",
+}: PhoneShellProps) {
+  const inner =
+    tone === "dark" ? "bg-ink text-white" : "bg-bg text-ink";
   return (
     <div className="min-h-full flex items-center justify-center bg-bg sm:p-6">
       <div
         className={[
-          "relative w-full bg-bg text-ink overflow-hidden flex flex-col",
+          "relative w-full overflow-hidden flex flex-col",
+          inner,
           // Phone-sized viewport → full screen.
           "min-h-screen",
           // Desktop-sized viewport → 390×844 device frame.
