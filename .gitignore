@@ -42,7 +42,13 @@ yarn-error.log*
 
 # claude design handoff bundle — large (21 MB: PDF + images + bundled HTML).
 # Re-fetch as needed; the brand decisions live in docs/PRD.md §5 and §12.
-design/
+# Exception: keep design/alef/project/src/store.jsx tracked — it's the
+# canonical seed-data source we replay into Supabase in 1.2.4.
+/design/**
+!/design/alef/
+!/design/alef/project/
+!/design/alef/project/src/
+!/design/alef/project/src/store.jsx
 
 # typescript
 *.tsbuildinfo
