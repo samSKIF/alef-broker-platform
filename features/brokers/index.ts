@@ -4,4 +4,4 @@
 
 export { BrokerRosterTable } from "./components/BrokerRosterTable";
 export { continueAsDemoBroker, onboardBroker } from "./actions";
-export type { Broker, BrokerCreateInput, BrokerRosterRow } from "./types";
+export type { Broker, BrokerRosterRow } from "./types";

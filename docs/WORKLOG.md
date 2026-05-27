@@ -1553,3 +1553,80 @@ sessions. Keep entries concise but complete.
   - Service worker registers on first visit; reload after going
     airplane-mode → you should land on the branded "You're offline"
     screen instead of Safari's default error page.
+
+### [2026-05-28 00:30] — Fixes: onboarding starter-card clicks + profile photo field
+- **Phase / Plan item:** Phase 1 · 1.3.3 / 1.3.4 back-fills
+- **Status:** DONE
+- **What I did:** Two small fixes you spotted on the live deploy.
+
+  **(1) `/onboarding/done` starter cards were not clickable.**
+  The two cards ("Start with Foundation" and "Explore Alef
+  projects") were rendered as `<Card><div>…</div></Card>` with no
+  href or `<Link>` wrapper, so clicks went nowhere. Wrapped each
+  card in a Next.js `<Link>`:
+  - "Start with Foundation" → `/academy` (the list page already
+    surfaces the pending-for-you first module).
+  - "Explore Alef projects" → `/projects`.
+  PRD §6.4 lists these as starter affordances; the original 1.3.4
+  build forgot the link wrapping.
+
+  **(2) `/onboarding/name` was missing the optional profile photo.**
+  PRD §6.3 lists "Profile photo (optional, skippable)" as a
+  name-capture field but 1.3.3 shipped without it. Back-fill:
+  - **New Storage bucket** `broker-photos` (public, alongside the
+    existing `project-images` / `brochures` / `videos`).
+  - **`onboardBroker` server action** now takes a `FormData` rather
+    than a typed object. Extracts `name` / `role` / `brokerage` /
+    `photo` (File, optional); guards on `photo.size > 0` so empty
+    file inputs don't trigger uploads. Uploads to `broker-photos`
+    via the existing `uploadToStorage` helper, then writes the URL
+    to `brokers.photo_url`.
+  - **`NameForm`** swapped to build a FormData on submit (still
+    `useTransition` + client-side validation; just changes the wire
+    format). Added a circular photo button above the field list,
+    with a hidden `<input type="file" accept="image/*">` behind
+    it. Shows a `<Image>` preview when a file is selected, with a
+    small "Add"/"Check" badge and a "Remove photo" link under the
+    circle. Object URLs are revoked when replaced so we don't leak
+    memory across re-selections.
+  - **Dead code removal:** `BrokerCreateInput` (in
+    `features/brokers/types.ts`) was orphaned by the FormData
+    switch — removed it + the re-export from
+    `features/brokers/index.ts`.
+
+- **Files changed:**
+  - `app/(broker)/onboarding/done/page.tsx` (wrap cards in `<Link>`)
+  - `app/(broker)/onboarding/name/_form.tsx` (photo UI + FormData)
+  - `features/brokers/actions.ts` (FormData signature + upload +
+    `photo_url` insert)
+  - `features/brokers/types.ts` (drop BrokerCreateInput)
+  - `features/brokers/index.ts` (drop the re-export)
+  - DB migration: `add_broker_photos_bucket`
+  - `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`, `docs/PRD.md`
+- **Decisions made:**
+  - **Separate `broker-photos` bucket** rather than reusing
+    `project-images`. Cleaner mental model + lets us iterate on
+    broker-photo lifecycle (size limits, rotation) independently
+    of property-cover uploads.
+  - **FormData wire format for `onboardBroker`.** Mirrors the admin
+    authoring forms. Files survive server-action boundaries cleanly
+    in FormData; passing a `File` as a typed argument works but is
+    more fragile.
+  - **Reconnect flow stays cookie-only** — Samir confirmed in
+    chat. Real auth is Phase 2 (item 2.1). No UI change needed.
+- **Tested:**
+  - `npx tsc --noEmit` PASS.
+  - `npx next build` PASS, 38 routes.
+  - DB: `storage.buckets` now lists `broker-photos` with `public=true`.
+- **Next:** Wait for Samir to redeploy on Vercel and confirm the
+  three "wow" moments live (1.7.4 / 1.7.5).
+- **Notes for the user:**
+  1. Pushing these now will trigger a Vercel auto-deploy on `main`.
+     Once it's green, retry `/onboarding/name` — the form should
+     show a circular photo picker above the Full name field, and
+     the resulting broker's avatar on `/home` should be the photo
+     (rather than initials) if you uploaded one.
+  2. **No env-var change needed.** The new bucket lives in the same
+     Supabase project; the existing service-role key reaches it.
+  3. The two starter cards on `/onboarding/done` should now
+     navigate to `/academy` and `/projects` respectively.

@@ -50,7 +50,7 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ### 1.3 — Broker app (mobile PWA)
 - [x] 1.3.1 Splash screen (animated logo, auto-advance) — `/` reads broker cookie and routes to `/welcome` or `/home` after a 3.8s animation (copper aurora, twinkles, expanding rings, logo fade-in, bilingual taglines).
 - [x] 1.3.2 Onboarding: Welcome — `/welcome` hero photo + Alef logo overlay + "Get started" CTA.
-- [x] 1.3.3 Onboarding: Name capture — `/onboarding/name` controlled form (Full name / Role / Brokerage) calling the `onboardBroker` server action; inserts a Bronze broker, sets the `broker_id` cookie.
+- [x] 1.3.3 Onboarding: Name capture — `/onboarding/name` controlled form calling the `onboardBroker` server action; inserts a Bronze broker, sets the `broker_id` cookie. Four fields per PRD §6.3: Full name, Role, Brokerage (all required), Profile photo (optional). Photo uploads to the new `broker-photos` Storage bucket and is stored at `brokers.photo_url`; the form was shipped without the photo field in the original 1.3.3 build and back-filled afterwards.
 - [x] 1.3.4 Onboarding: Welcome message — `/onboarding/done` "Ahlan, [name]" + Bronze enrollment + two starter actions.
 - [x] 1.3.5 App shell + bottom tab bar + navigation router — `app/(broker)/(app)/layout.tsx` wraps every authenticated screen in `PhoneShell` + `<TabBar>`; new `AppHeader` and `TabBar` primitives added to `/components/shared`. Tab badges (pending Academy modules + sent-notification count) computed in the layout.
 - [x] 1.3.6 Home dashboard — `/home` with greeting (date + "Good morning, X"), snapshot card (points + tier + progress to next tier via TIER ladder), 3-up quick actions (Book / Share brochure / Resume training).

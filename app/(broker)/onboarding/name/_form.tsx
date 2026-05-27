@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import Image from "next/image";
+import { useRef, useState, useTransition } from "react";
 import { Button, Icon } from "@/components/shared";
 import { onboardBroker } from "@/features/brokers/actions";
 
@@ -12,15 +13,20 @@ const ROLE_OPTIONS = [
   "Other",
 ] as const;
 
-// PRD §6.3 — Name capture form. Three required fields; on submit, calls the
-// server action onboardBroker which inserts a Bronze broker, sets the
-// broker_id cookie, and server-redirects to /onboarding/done.
+// PRD §6.3 — Name capture form. Four fields: full name + role + brokerage
+// (all required), and a profile photo (optional). On submit, builds a
+// FormData and calls the server action onboardBroker, which uploads the
+// photo to the broker-photos bucket (if any), inserts the Bronze broker
+// row, sets the broker_id cookie, and server-redirects to /onboarding/done.
 export function NameForm() {
   const [name, setName] = useState("");
   const [role, setRole] = useState("");
   const [brokerage, setBrokerage] = useState("");
+  const [photo, setPhoto] = useState<File | null>(null);
+  const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canSubmit =
     name.trim().length > 0 &&
@@ -28,19 +34,40 @@ export function NameForm() {
     brokerage.trim().length > 0 &&
     !pending;
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null;
+    setPhoto(file);
+    // Build an object URL for the live preview circle. The previous URL
+    // (if any) gets revoked so we don't leak memory across re-selections.
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return file ? URL.createObjectURL(file) : null;
+    });
+  }
+
+  function clearPhoto() {
+    setPhoto(null);
+    setPhotoPreview((prev) => {
+      if (prev) URL.revokeObjectURL(prev);
+      return null;
+    });
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   return (
     <form
       onSubmit={(e) => {
         e.preventDefault();
         if (!canSubmit) return;
         setError(null);
+        const fd = new FormData();
+        fd.set("name", name.trim());
+        fd.set("role", role);
+        fd.set("brokerage", brokerage.trim());
+        if (photo) fd.set("photo", photo);
         startTransition(async () => {
           try {
-            await onboardBroker({
-              name: name.trim(),
-              brokerage: brokerage.trim(),
-              role,
-            });
+            await onboardBroker(fd);
           } catch (err) {
             setError(
               err instanceof Error
@@ -59,10 +86,65 @@ export function NameForm() {
         <h1 className="mb-1.5 text-[26px] font-bold leading-[1.15] tracking-[-0.02em] text-ink">
           Tell us about you.
         </h1>
-        <p className="mb-4 text-[13.5px] leading-[1.5] text-ink-2">
+        <p className="mb-5 text-[13.5px] leading-[1.5] text-ink-2">
           We&apos;ll personalise your dashboard and every brochure you share
           with clients.
         </p>
+
+        {/* Profile photo (optional) — PRD §6.3. Tappable circle with the
+            file picker behind it; preview replaces the placeholder once
+            an image is chosen. */}
+        <div className="mb-5 flex flex-col items-center">
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            className="relative flex h-[88px] w-[88px] items-center justify-center overflow-hidden rounded-full border-[1.5px] border-line bg-card text-ink-3 shadow-soft-sm focus:outline-none focus:ring-2 focus:ring-accent"
+            aria-label={photoPreview ? "Change profile photo" : "Add profile photo"}
+          >
+            {photoPreview ? (
+              <Image
+                src={photoPreview}
+                alt="Profile preview"
+                fill
+                sizes="88px"
+                className="object-cover"
+                unoptimized
+              />
+            ) : (
+              <Icon name="user" size={28} />
+            )}
+            <span
+              className="absolute -bottom-0.5 -right-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-accent text-white shadow-soft-sm"
+              aria-hidden
+            >
+              <Icon
+                name={photoPreview ? "check" : "plus"}
+                size={14}
+                strokeWidth={2.4}
+              />
+            </span>
+          </button>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            onChange={handlePhotoChange}
+            className="hidden"
+          />
+          <div className="mt-2 text-[11.5px] font-medium tracking-[0.02em] text-ink-3">
+            {photoPreview ? (
+              <button
+                type="button"
+                onClick={clearPhoto}
+                className="text-accent underline-offset-2 hover:underline"
+              >
+                Remove photo
+              </button>
+            ) : (
+              <>Add a profile photo · optional</>
+            )}
+          </div>
+        </div>
 
         <Field label="Full name" required>
           <input

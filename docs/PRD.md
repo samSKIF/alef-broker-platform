@@ -716,6 +716,31 @@ analytics, native app wrappers, AWS migration for video/scale.
   official square brand symbol later, dropping a PNG at the same
   path overrides the generated version (Next.js prefers a literal
   file over a generator).
+- **[27 May 2026]** **Profile photo on onboarding (back-fill).** PRD §6.3
+  lists "Profile photo (optional, skippable)" as a name-capture field;
+  the 1.3.3 build shipped without it. Back-filled: new `broker-photos`
+  public Storage bucket (alongside the existing `project-images` /
+  `brochures` / `videos`), `onboardBroker` now takes a `FormData`
+  with an optional `photo` File entry and writes the resulting URL to
+  `brokers.photo_url`, and `NameForm` exposes a circular photo-picker
+  above the field list with a live preview + "Remove photo" toggle.
+  Empty `<input type="file">` selections come through as a File of
+  size 0 — the action guards on `size > 0` so unset photos don't
+  trigger an upload.
+- **[27 May 2026]** **Reconnect flow stays cookie-only (confirmed).**
+  Samir confirmed that real "sign in" / reconnect is deferred to
+  Phase 2 (item 2.1, real broker auth + RERA verification). The POC
+  has exactly two entry paths on `/welcome`: fresh onboarding via
+  "Get started", or the "Continue as Layla (demo)" affordance. If a
+  broker clears their cookie they go through onboarding again — that
+  is by-design for the POC.
+- **[27 May 2026]** **Onboarding starter cards weren't clickable.**
+  `/onboarding/done`'s two starter affordances ("Start with
+  Foundation", "Explore Alef projects") were rendered as bare
+  `<Card><div>` with no href — clicks went nowhere. Wrapped each
+  Card in a Next.js `<Link>` pointing at `/academy` and `/projects`
+  respectively. PRD §6.4 lists these as starter affordances; the
+  original 1.3.4 build omitted the link wrapping.
 - **[27 May 2026]** **Minimal service worker for offline shell.**
   `public/sw.js` precaches `/offline` on install and only intercepts
   navigation requests (HTML pages), falling back to the cached
