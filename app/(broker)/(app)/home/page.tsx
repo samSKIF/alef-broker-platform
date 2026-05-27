@@ -10,6 +10,7 @@ import {
 } from "@/components/shared";
 import { CampaignCard } from "@/features/campaigns";
 import { AskAlefFAB } from "@/features/ask-alef";
+import { nextTier, progressTowardNext } from "@/features/brokers";
 import { getBrokerById } from "@/features/brokers/queries";
 import { listPublishedCampaigns } from "@/features/campaigns/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
@@ -20,33 +21,6 @@ import { getBrokerIdFromCookie } from "@/lib/dummy-account";
 // (points/tier/progress) · 3-up quick actions.
 
 export const dynamic = "force-dynamic";
-
-// Tier ladder used by the snapshot card. Thresholds taken from the design's
-// commission card ("Gold now from 2,500 pts") and the seed-data points
-// distribution. Documented in PRD §12.
-const TIERS: ReadonlyArray<{ tier: Tier; threshold: number }> = [
-  { tier: "Bronze", threshold: 0 },
-  { tier: "Silver", threshold: 1000 },
-  { tier: "Gold", threshold: 2500 },
-  { tier: "Preferred", threshold: 5000 },
-];
-
-function nextTier(points: number): { name: string; remaining: number } | null {
-  for (const t of TIERS) {
-    if (points < t.threshold) return { name: t.tier, remaining: t.threshold - points };
-  }
-  return null; // Already Preferred.
-}
-
-function progressTowardNext(points: number): { value: number; total: number } {
-  // Find the next-up threshold; if none, return 100%.
-  const next = TIERS.find((t) => points < t.threshold);
-  if (!next) return { value: 1, total: 1 };
-  // Find the previous threshold (i.e. the tier we're sitting in).
-  const prevs = TIERS.filter((t) => t.threshold <= points);
-  const prev = prevs[prevs.length - 1] ?? TIERS[0];
-  return { value: points - prev.threshold, total: next.threshold - prev.threshold };
-}
 
 function greeting(): string {
   const h = new Date().getHours();

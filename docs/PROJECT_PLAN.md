@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.6 + 1.7.1 done. PWA is installable: `app/manifest.ts` returns a valid web manifest with brand-coloured theme + 4 generated icon endpoints (`/icon`, `/apple-icon`, `/icon0` 192px, `/icon1` 512px) wired in via Next.js' metadata routes; `public/sw.js` registers as a service worker on every page load (mounted from root layout via `<ServiceWorkerRegister>`) and provides a navigate-fallback to `/offline` when no network. Build + TypeScript clean — 38 routes (33 dynamic, 5 static, plus icon/manifest endpoints). 54 / 55 Phase-1 items done. **BLOCKED on Samir** for 1.7.2–1.7.4 — Vercel account creation + env-var paste; see WORKLOG entry for step-by-step.**
+**Phase 1 · sections 1.0–1.6 + 1.7.1 done. Ask Alef AI scope expanded (PRD §6.6 update): the route handler now injects fresh modules + campaigns + tier ladder + the current broker's name/tier/points/completed-modules into the system prompt on every request, in addition to the existing brochures + admin-editable instructions. New shared `features/brokers/tiers.ts` is the single source of truth for the tier ladder + points rules (imported by `/home` and the AI route). Admin-editable "Points & tier program" `ai_source` lets HQ refine the loyalty-program copy without code changes. Build + TypeScript clean. 55 / 55 functional Phase-1 items done. **BLOCKED on Samir** for 1.7.2–1.7.4 — Vercel build still missing `/admin/*` routes; needs Vercel-side diagnosis (see WORKLOG).**
 
 ---
 
@@ -71,6 +71,7 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.4.4 Tight system prompt held in `ai_config.instructions` (new table) — restricts answers to Alef projects, politely declines off-topic, asks broker to check brochure / book a visit when not in sources, brand-on-tone copy. Editable from 1.5.8.
 - [x] 1.4.5 Ask Alef chat UI at `/ask-alef`: `AlefAIAvatar` brand-derived mark with rotating conic-gradient aura, message bubbles (navy user pill / white assistant bubble with avatar), streaming chunks rendered live, 3-up suggestion chips on cold start, typing-dot indicator, input pill with Enter-to-send.
 - [x] 1.4.6 Floating "Ask Alef AI" button on `/home` — `AskAlefFAB` pill above the tab bar with rotating-aura avatar and copper halo; links to `/ask-alef`.
+- [x] 1.4.7 Expanded AI scope (post-deploy follow-up; supersedes original PRD §6.6 "projects only" wording — new wording in PRD §12). `/api/ask-alef/route.ts` now injects, on every request: (a) all published modules with title / kind / duration / points / tier gating / quiz topics, (b) all published campaigns with subtitle + schedule, (c) the canonical tier ladder (Bronze/Silver/Gold/Preferred thresholds), and (d) the current broker's name/tier/points and completed-module IDs (only when the `broker_id` cookie is present). New shared `features/brokers/tiers.ts` owns the ladder + how-to-earn rules. New admin-editable `ai_sources` row "Points & tier program" holds the narrative policy copy. `ai_config.instructions` rewritten to cover the broadened scope while still declining unrelated topics.
 
 ### 1.5 — Admin console (desktop)
 - [x] 1.5.1 Admin shell + routing — `app/(admin)/admin/layout.tsx` derives the active sidebar item from `usePathname` and renders `<AdminShell>`. Added `ai-training` to `ADMIN_ROUTES`.

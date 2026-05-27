@@ -4,4 +4,13 @@
 
 export { BrokerRosterTable } from "./components/BrokerRosterTable";
 export { continueAsDemoBroker, onboardBroker } from "./actions";
+export {
+  TIERS,
+  TIER_BENEFITS,
+  POINTS_RULES,
+  getCurrentTier,
+  nextTier,
+  progressTowardNext,
+} from "./tiers";
+export type { Tier } from "./tiers";
 export type { Broker, BrokerRosterRow } from "./types";

@@ -1630,3 +1630,112 @@ sessions. Keep entries concise but complete.
      Supabase project; the existing service-role key reaches it.
   3. The two starter cards on `/onboarding/done` should now
      navigate to `/academy` and `/projects` respectively.
+
+### [2026-05-28 01:30] — Expand Ask Alef AI scope: modules + campaigns + points/tiers
+- **Phase / Plan item:** Phase 1 · 1.4.7 (new sub-item; PRD §6.6 scope update)
+- **Status:** DONE
+- **What I did:** Lifted PRD §6.6's "answer only about indexed
+  projects" restriction (per Samir's chat decision) and wired four
+  new live knowledge sources into the chat route handler.
+
+  **DB migration `expand_ai_scope_modules_campaigns_points`:**
+  1. Rewrote `ai_config.instructions` — broader scope rules covering
+     projects + training + campaigns + loyalty program. Still
+     declines unrelated topics in one sentence. Admin can refine
+     further at `/admin/ai-training`.
+  2. Seeded a new `ai_sources` row "Points & tier program" with
+     ~600 chars of narrative policy copy (how points are earned,
+     tier benefits, AI guidance notes). `kind='note'`, `enabled=true`,
+     `sort_order=10`.
+
+  **New shared module `features/brokers/tiers.ts`** —
+  single source of truth for the loyalty program:
+  - `TIERS` ladder (Bronze 0 / Silver 1k / Gold 2.5k / Preferred 5k)
+  - `TIER_BENEFITS` map (one-liner per tier)
+  - `POINTS_RULES` constants (per-activity point awards)
+  - `getCurrentTier(points)`, `nextTier(points)`,
+    `progressTowardNext(points)` helpers
+  - Re-exports `Tier` from `components/shared/TierBadge` so the
+    string-union is declared exactly once.
+  Wired into `features/brokers/index.ts`.
+
+  **`/home/page.tsx`** — dropped the local `TIERS` / `nextTier` /
+  `progressTowardNext` declarations and imported them from
+  `@/features/brokers`. One file, ~20 lines removed.
+
+  **`/api/ask-alef/route.ts`** — major rewrite. On every POST:
+  - Reads `broker_id` cookie via `getBrokerIdFromCookie`.
+  - Runs SIX queries in parallel: `getAiConfig`,
+    `listEnabledAiSources`, `listPublishedModules`,
+    `listPublishedCampaigns`, `getBrokerById(brokerId)` (only when
+    cookie present), `listCompletedModuleIds(brokerId)` (only when
+    cookie present).
+  - Builds system prompt with five blocks below the existing
+    instructions:
+    - `SOURCES` — original brochures + new Points & tier copy
+    - `TRAINING CATALOG (live, from DB)` — every published module
+      formatted as `[id] Title (kind, X pts · duration · tier · project)`
+      with up to 4 quiz question prompts to hint at content
+    - `CAMPAIGNS (live, from DB)` — title + tag + subtitle + schedule
+    - `TIER LADDER (canonical thresholds)` — the ladder
+    - `CURRENT BROKER (the person you're talking to)` — name,
+      brokerage, role, current tier, current points, next tier +
+      remaining, completed module titles + IDs. When no cookie
+      this block is replaced with a "no broker cookie" hint so the
+      AI doesn't invent personal data.
+  - Token impact: ~3.5 KB extra on the system prompt. Negligible
+    against `gpt-4o-mini`'s 128k context window.
+
+- **Files changed:**
+  - `features/brokers/tiers.ts` (new)
+  - `features/brokers/index.ts` (re-export tiers helpers)
+  - `app/(broker)/(app)/home/page.tsx` (use shared ladder)
+  - `app/api/ask-alef/route.ts` (dynamic context injection)
+  - DB migration: `expand_ai_scope_modules_campaigns_points`
+  - `docs/PRD.md` (§6.6 rewritten, §12 entries)
+  - `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`
+- **Decisions made:**
+  - **Dynamic injection beats static ai_sources for catalog data.**
+    Modules + campaigns are already authored in the admin; pulling
+    them fresh from the DB every chat means admin edits take effect
+    immediately, with zero risk of the AI quoting a stale catalog.
+  - **Per-broker context via cookie, not request body.** The
+    `broker_id` cookie is already attached to every request — no
+    chat-UI change required. Server reads it via
+    `getBrokerIdFromCookie` in the same place as every other
+    broker-app server component.
+  - **Policy copy is editable, catalog data is code-controlled.**
+    Tier rules + how-to-earn rules live in an editable ai_source
+    (admin can tune the loyalty program from the AI Training screen
+    without redeploying). Module titles, campaign titles, and the
+    canonical tier-threshold numbers live in code so they can't
+    drift from what the rest of the app uses.
+  - **Tier ladder lives in `features/brokers/`** — semantically
+    closer to brokers than to UI primitives, and the home dashboard
+    + the AI route + (eventually) admin overview can all import the
+    same `nextTier()` helper.
+- **Tested:**
+  - `npx tsc --noEmit` PASS.
+  - `npx next build` PASS (38 routes; route table unchanged).
+  - DB: confirmed both updates landed via SQL probe — `ai_config`
+    has the new instructions text, `ai_sources` has the new
+    "Points & tier program" row enabled.
+- **Next:** Resolve the still-outstanding Vercel /admin 404 (build
+  shows 33s Ready from commit 69514db but the admin tree isn't in
+  the deployed output — Vercel-side diagnosis needed). Then 1.7.5
+  smoke-test of the three "wow" moments live.
+- **Notes for the user:**
+  1. The Ask Alef AI will pick up the new scope on the next
+     Vercel deploy (auto-trigger when you push). Try it on the
+     live URL with prompts like:
+     - "What modules are available?"
+     - "How many points do I have?" / "How do I reach Gold?"
+     - "What campaigns are running this week?"
+     - "Tell me about the Hayyan Foundation module."
+  2. You can tune the loyalty-program copy at
+     `/admin/ai-training` → "Points & tier program" without a
+     redeploy. The AI sees your edits on the next chat reply.
+  3. The dynamic catalog data (module titles, campaign titles)
+     comes from the actual DB tables — anything you author in
+     `/admin/academy` or `/admin/campaigns` is immediately in
+     scope for the AI's answers.

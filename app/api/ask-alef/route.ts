@@ -5,16 +5,43 @@ import {
   listEnabledAiSources,
 } from "@/features/ask-alef/queries";
 import type { ChatMessage } from "@/features/ask-alef/types";
+import { getBrokerIdFromCookie } from "@/lib/dummy-account";
+import { getBrokerById } from "@/features/brokers/queries";
+import {
+  listPublishedModules,
+  listCompletedModuleIds,
+} from "@/features/training/queries";
+import { listPublishedCampaigns } from "@/features/campaigns/queries";
+import { TIERS, nextTier } from "@/features/brokers";
+import type { Module } from "@/features/training/types";
+import type { Campaign } from "@/features/campaigns/types";
+import type { Broker } from "@/features/brokers/types";
+import type { QuizQuestion } from "@/features/training/types";
 
 // PRD §6.6 + §9 — Ask Alef API. POST { messages: [{role, content}, ...] }
 // streams the assistant's reply back as plain-text chunks.
 //
-// Config-driven: instructions + model knobs come from ai_config, knowledge
-// from ai_sources. Admin's AI Training screen (1.5.8) can edit both
-// without redeploying.
+// Scope (PRD §12 decision, 27 May 2026 — expanded from "indexed projects
+// only"): Alef projects, training modules, ongoing/past campaigns, and
+// the broker loyalty program (points + tiers). The system prompt is built
+// fresh per request from:
 //
-// Phase 1 keeps it simple per PRD §9 — full source text injected into the
-// system prompt. Vector / embeddings retrieval is Phase 2 (PROJECT_PLAN 2.5).
+//   - ai_config.instructions  (admin-editable rules)
+//   - ai_sources              (admin-editable knowledge: brochures + points
+//                              policy)
+//   - modules                 (live catalog — title, kind, duration, points,
+//                              tier gating, quiz topics)
+//   - campaigns               (live published campaigns)
+//   - brokers + activity      (the requesting broker's name, tier, points,
+//                              and completed module IDs — only when the
+//                              broker_id cookie is present)
+//
+// Dynamic injection means admin edits in /admin/projects, /admin/academy,
+// /admin/campaigns, /admin/push, /admin/ai-training take effect on the
+// NEXT chat request — no cache, no rebuild.
+//
+// Phase 1 still keeps it simple per PRD §9 — full content stuffed in the
+// system prompt. Vector retrieval is Phase 2 (PROJECT_PLAN 2.5).
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -31,22 +58,122 @@ function isValidMessage(m: unknown): m is ChatMessage {
   );
 }
 
-function buildSystemPrompt(
-  instructions: string,
-  sources: { title: string; content: string | null }[],
+// ---- Block formatters ----------------------------------------------------
+// Each returns the multi-line text that goes under a "## Block" heading in
+// the system prompt. Kept short and tabular so the AI can scan quickly.
+
+function formatModulesBlock(modules: Module[]): string {
+  if (modules.length === 0) return "(no published modules yet)";
+  return modules
+    .map((m) => {
+      // Quiz topics give the AI a hint of the module's content without
+      // dumping the full quiz JSON.
+      let topics = "";
+      if (Array.isArray(m.quiz) && m.quiz.length > 0) {
+        const qs = (m.quiz as unknown as QuizQuestion[])
+          .map((q) => q.q)
+          .filter(Boolean)
+          .slice(0, 4);
+        if (qs.length > 0) topics = ` — quiz topics: ${qs.join(" / ")}`;
+      }
+      const tier = m.tier_required ? ` · ${m.tier_required}+ tier` : "";
+      const dur = m.duration ? ` · ${m.duration}` : "";
+      const proj = m.project_id ? ` · project: ${m.project_id}` : "";
+      const when =
+        m.kind === "live" && (m.when_at || m.location)
+          ? ` · ${[m.when_at, m.location].filter(Boolean).join(" @ ")}`
+          : "";
+      return `- [${m.id}] ${m.title} (${m.kind}, ${m.points} pts${dur}${tier}${proj}${when})${topics}`;
+    })
+    .join("\n");
+}
+
+function formatCampaignsBlock(campaigns: Campaign[]): string {
+  if (campaigns.length === 0) return "(no published campaigns yet)";
+  return campaigns
+    .map((c) => {
+      const sub = c.subtitle ? ` — ${c.subtitle}` : "";
+      const sched = c.schedule ? ` · ${c.schedule}` : "";
+      const tag = c.tag ? ` [${c.tag}]` : "";
+      return `- ${c.title}${tag}${sub}${sched}`;
+    })
+    .join("\n");
+}
+
+function formatTierLadder(): string {
+  return TIERS.map(
+    (t) => `- ${t.tier}: ${t.threshold.toLocaleString("en-US")}+ points`,
+  ).join("\n");
+}
+
+function formatBrokerBlock(
+  broker: Broker,
+  completedModuleIds: Set<string>,
+  modules: Module[],
 ): string {
+  const next = nextTier(broker.points);
+  const firstName = broker.name.split(/\s+/)[0] ?? broker.name;
+  const completedNames =
+    completedModuleIds.size === 0
+      ? "(none yet)"
+      : modules
+          .filter((m) => completedModuleIds.has(m.id))
+          .map((m) => `${m.title} [${m.id}]`)
+          .join(", ");
+  return [
+    `Name: ${broker.name} (first name: ${firstName})`,
+    `Brokerage: ${broker.brokerage} · Role: ${broker.role}`,
+    `Current tier: ${broker.tier} · Current points: ${broker.points.toLocaleString("en-US")}`,
+    next
+      ? `Next tier: ${next.name} — needs ${next.remaining.toLocaleString("en-US")} more points`
+      : `Already at Preferred — top of the ladder.`,
+    `Completed modules: ${completedNames}`,
+  ].join("\n");
+}
+
+function buildSystemPrompt({
+  instructions,
+  sources,
+  modules,
+  campaigns,
+  broker,
+  completedModuleIds,
+}: {
+  instructions: string;
+  sources: { title: string; content: string | null }[];
+  modules: Module[];
+  campaigns: Campaign[];
+  broker: Broker | null;
+  completedModuleIds: Set<string>;
+}): string {
   const sourceBlock = sources
     .filter((s) => s.content && s.content.trim().length > 0)
     .map((s) => `## ${s.title}\n${s.content}`)
     .join("\n\n");
-  return [
-    instructions,
-    "",
-    "---",
-    "SOURCES",
-    "---",
-    sourceBlock || "(no sources available)",
-  ].join("\n");
+
+  const parts: string[] = [instructions, "", "---", "SOURCES", "---"];
+  parts.push(sourceBlock || "(no sources available)");
+
+  parts.push("", "---", "TRAINING CATALOG (live, from DB)", "---");
+  parts.push(formatModulesBlock(modules));
+
+  parts.push("", "---", "CAMPAIGNS (live, from DB)", "---");
+  parts.push(formatCampaignsBlock(campaigns));
+
+  parts.push("", "---", "TIER LADDER (canonical thresholds)", "---");
+  parts.push(formatTierLadder());
+
+  if (broker) {
+    parts.push("", "---", "CURRENT BROKER (the person you're talking to)", "---");
+    parts.push(formatBrokerBlock(broker, completedModuleIds, modules));
+  } else {
+    parts.push("", "---", "CURRENT BROKER", "---");
+    parts.push(
+      "(no broker cookie — answer generically, do not assume any personal points/tier)",
+    );
+  }
+
+  return parts.join("\n");
 }
 
 export async function POST(req: NextRequest) {
@@ -74,14 +201,30 @@ export async function POST(req: NextRequest) {
       : m,
   );
 
-  // Pull config + sources fresh on every request — admin edits take effect
-  // immediately, no cache to bust.
-  const [config, sources] = await Promise.all([
-    getAiConfig(),
-    listEnabledAiSources(),
-  ]);
+  // Pull everything in parallel. Per-broker data only loads when the
+  // broker_id cookie is present (which it is for any authenticated
+  // broker-app session).
+  const brokerId = await getBrokerIdFromCookie();
+  const [config, sources, modules, campaigns, broker, completedModuleIds] =
+    await Promise.all([
+      getAiConfig(),
+      listEnabledAiSources(),
+      listPublishedModules(),
+      listPublishedCampaigns(),
+      brokerId ? getBrokerById(brokerId) : Promise.resolve(null),
+      brokerId
+        ? listCompletedModuleIds(brokerId)
+        : Promise.resolve(new Set<string>()),
+    ]);
 
-  const systemPrompt = buildSystemPrompt(config.instructions, sources);
+  const systemPrompt = buildSystemPrompt({
+    instructions: config.instructions,
+    sources,
+    modules,
+    campaigns,
+    broker,
+    completedModuleIds,
+  });
 
   const openai = getOpenAIClient();
 

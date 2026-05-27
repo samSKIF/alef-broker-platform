@@ -224,10 +224,20 @@ name** (required), **Profile photo** (optional, skippable).
 
 ### 6.6 Ask Alef — AI chat — `Phase 1`
 - Claude/ChatGPT-style chat UI. Header: Alef AI avatar, "grounded in Alef data".
-- Sends user question → **OpenAI API** with a system prompt restricting answers
-  to indexed Alef projects only. Streams the response.
-- Shows inline project cards and a "Sources" strip when relevant.
-- **Data source:** `projects` where `aiIndexed = true` + their brochure text.
+- Sends user question → **OpenAI API** with a system prompt that grounds the
+  AI in Alef knowledge. Streams the response.
+- **Scope** (updated 27 May 2026 — see §12): Alef projects, training modules,
+  ongoing/past campaigns, and the broker loyalty program (tiers + points).
+  Politely declines anything else.
+- **Data sources** (all injected fresh per request):
+  - `ai_config.instructions` — editable system-prompt rules.
+  - `ai_sources` (enabled rows) — brochure text for indexed projects +
+    the editable "Points & tier program" policy copy.
+  - `modules` (published) — full training catalog with quiz topics.
+  - `campaigns` (published) — ongoing + past.
+  - The canonical tier ladder + `brokers` row + completed-module IDs
+    for the broker identified by the `broker_id` cookie (per-broker
+    context degrades gracefully when no cookie is present).
 - See §9 for the AI integration spec.
 
 ### 6.7 Academy — `Phase 1`
@@ -734,6 +744,41 @@ analytics, native app wrappers, AWS migration for video/scale.
   "Get started", or the "Continue as Layla (demo)" affordance. If a
   broker clears their cookie they go through onboarding again — that
   is by-design for the POC.
+- **[27 May 2026]** **AI scope expanded beyond projects (PRD §6.6
+  update).** Original PRD §6.6 said "restrict answers to indexed
+  Alef projects only". Samir confirmed in chat: the AI should also
+  cover (a) all training modules (catalog + per-broker completion
+  status + content), (b) ongoing and past campaigns, and (c) the
+  broker loyalty program (general tier rules + the asking broker's
+  own points/tier). Implementation: `/api/ask-alef/route.ts` now
+  reads the `broker_id` cookie and runs five extra queries in
+  parallel with the existing config/sources fetch — modules,
+  campaigns, broker row, completed-module IDs, tier ladder — and
+  formats each as a system-prompt block ("TRAINING CATALOG",
+  "CAMPAIGNS", "TIER LADDER", "CURRENT BROKER"). Per-broker context
+  degrades gracefully when no cookie is present. The catalog data
+  is always live (queried fresh per request), so admin edits in
+  /admin/academy or /admin/campaigns take effect on the next chat
+  reply with no cache to bust. Token budget impact: ~3.5 KB extra
+  on the system prompt, well within `gpt-4o-mini`'s 128k window.
+- **[27 May 2026]** **Shared tier ladder lives in
+  `features/brokers/tiers.ts`.** Previously the ladder (Bronze 0 /
+  Silver 1k / Gold 2.5k / Preferred 5k) was hard-coded in
+  `app/(broker)/(app)/home/page.tsx` only. Extracted to a shared
+  module exporting `TIERS`, `TIER_BENEFITS`, `POINTS_RULES`,
+  `getCurrentTier`, `nextTier`, `progressTowardNext`. Imported by
+  the broker home snapshot card AND the Ask Alef route handler so
+  both surfaces always agree. `Tier` is still declared once in
+  `components/shared/TierBadge.tsx` (the shared-primitive layer);
+  `tiers.ts` re-exports it.
+- **[27 May 2026]** **"Points & tier program" ai_source.** New
+  editable knowledge row seeded via the
+  `expand_ai_scope_modules_campaigns_points` migration. Holds the
+  narrative copy the AI quotes when a broker asks how points work
+  or what each tier unlocks. Admin can edit at
+  `/admin/ai-training/source/<id>` to tune the program rules
+  without a code change (the dynamic catalog blocks remain
+  code-controlled — only the policy narrative is editable here).
 - **[27 May 2026]** **Onboarding starter cards weren't clickable.**
   `/onboarding/done`'s two starter affordances ("Start with
   Foundation", "Explore Alef projects") were rendered as bare
