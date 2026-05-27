@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · section 1.0 (project setup) is done locally; design study complete; typography decision resolved (Helvetica Neue LT Pro per PRD §5.2). 6 / 48 Phase-1 items done; 1 blocked (1.0.5 — GitHub remote, needs user). Next: 1.1 design-system foundation — fully unblocked, ready to start when Samir says go.**
+**Phase 1 · section 1.0 + 1.1 done. GitHub remote live at `samSKIF/alef-broker-platform` (branch `main`). Design system foundation built: brand palette + typography mapped to Tailwind v4 `@theme`; logos in `/public`; primitives (Button, Card, Chip, Progress, TierBadge, Icon, Logo) + PhoneShell + AdminShell in `/components/shared`. Build + lint clean. 12 / 48 Phase-1 items done. Next: section **1.2 — Supabase backend** (1.2.1 will need user to create the Supabase project).**
 
 ---
 
@@ -28,16 +28,16 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.0.3 Add Tailwind CSS
 - [x] 1.0.4 Set up the **feature-first** repo structure per PRD §2 — create the
   `/features/*` folders and `/components/shared`
-- [!] 1.0.5 Create GitHub repo, first commit, push — **first local commit done; GitHub remote pending user action (see WORKLOG)**
+- [x] 1.0.5 Create GitHub repo, first commit, push — pushed to `https://github.com/samSKIF/alef-broker-platform` on branch `main` (renamed from `master`).
 - [x] 1.0.6 Create `.env.example`; document required env vars
 - [x] 1.0.7 Move BRD/PRD/PLAN/WORKLOG/CLAUDE into `/docs` in the repo
 
 ### 1.1 — Design system foundation
-- [ ] 1.1.1 Map Alef brand palette to Tailwind theme tokens (PRD §5.1)
-- [ ] 1.1.2 Configure typography — Helvetica Neue / GE SS Two / fallbacks (§5.2)
-- [ ] 1.1.3 Add logo assets (light/dark) to `/public`
-- [ ] 1.1.4 Build shared primitives in `/components/shared`: Button, Card, Chip, Progress, TierBadge, Icon set
-- [ ] 1.1.5 Build the phone shell + the admin shell (sidebar/topbar) layouts in `/components/shared`
+- [x] 1.1.1 Map Alef brand palette to Tailwind theme tokens (PRD §5.1) — `@theme` block in `app/globals.css` with brand + tier + utility colors.
+- [x] 1.1.2 Configure typography — Helvetica Neue / GE SS Two / fallbacks (§5.2) — Inter / Tajawal / JetBrains_Mono loaded via `next/font`; CSS vars `--font-sans`, `--font-ar`, `--font-mono`; type scale tokens display/h1/h2/h3/body/caption/label.
+- [x] 1.1.3 Add logo assets (light/dark) to `/public` — `logo-light.png` + `logo-dark.png` copied from design bundle; `Logo` component in `/components/shared` uses `next/image`.
+- [x] 1.1.4 Build shared primitives in `/components/shared`: Button, Card, Chip, Progress, TierBadge, Icon set — all typed; Icon set ports the design's 31 line icons.
+- [x] 1.1.5 Build the phone shell + the admin shell (sidebar/topbar) layouts in `/components/shared` — `PhoneShell` (full-screen on mobile / 390×844 device frame on desktop) and `AdminShell` (navy sidebar + topbar + content; `Link`-based nav).
 
 ### 1.2 — Supabase backend
 - [ ] 1.2.1 **[needs user]** Guide Samir to create the Supabase project + keys
@@ -138,6 +138,16 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
   source files are available locally for inspection, the brand decisions are
   copied into `docs/PRD.md` §5 / §12 so they remain canonical in version
   control. Re-fetch URL recorded in WORKLOG.
+- **[2026-05-26]** Curated subset of `design/` committed: logos to `/public`,
+  brand-guidelines PDF to `/docs/assets`, and `design/alef/project/src/store.jsx`
+  un-ignored so the seed data is canonical in the repo (used in 1.2.4).
+- **[2026-05-26]** ESLint now ignores `design/**` — the design's JSX uses
+  `<script>`-tag globals (no imports), which would otherwise trip
+  `react/jsx-no-undef` 335 times.
+- **[2026-05-26]** Removed create-next-app's boilerplate SVGs in `/public`
+  (`file.svg`, `globe.svg`, `next.svg`, `vercel.svg`, `window.svg`) — they
+  were referenced only by the template `page.tsx`, which our 1.1 page rewrite
+  replaced.
 - **[2026-05-26] Typography decision — RESOLVED.** Samir confirmed against the
   brand-guidelines PDF: primary Latin family is **Helvetica Neue LT Pro**
   (PRD §5.2 was correct). Design `tokens.jsx`'s use of Neue Haas Grotesk
@@ -146,5 +156,4 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- **[2026-05-26] 1.0.5 — GitHub remote** — needs Samir to create the
-  GitHub repository, then we push. Step-by-step in the WORKLOG.
+- _(none — 1.0.5 + design + typography all resolved)_

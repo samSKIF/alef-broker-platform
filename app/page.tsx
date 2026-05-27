@@ -1,65 +1,176 @@
-import Image from "next/image";
+import Link from "next/link";
+import {
+  Button,
+  Card,
+  Chip,
+  Icon,
+  Logo,
+  Progress,
+  TierBadge,
+} from "@/components/shared";
+
+// Phase 1 · 1.1 verify page — a quick design-system check.
+// Renders every primitive against the brand palette so we can eyeball that
+// tokens, typography, and components are wired correctly. Real broker /
+// admin routes go under /broker and /admin in section 1.3 / 1.5.
 
 export default function Home() {
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <main className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
+      <header className="flex items-center justify-between border-b border-line pb-6">
+        <Logo height={28} />
+        <span className="text-caption font-bold uppercase tracking-[0.14em] text-ink-3">
+          Design system · Phase 1 · 1.1
+        </span>
+      </header>
+
+      <section className="flex flex-col gap-2">
+        <h1 className="text-display font-semibold tracking-[-0.02em]">
+          Alef Broker Platform
+        </h1>
+        <p className="max-w-xl text-h3 text-ink-2">
+          POC scaffold. The broker PWA lives at{" "}
+          <Link className="text-accent underline" href="/broker">
+            /broker
+          </Link>{" "}
+          and the admin console at{" "}
+          <Link className="text-accent underline" href="/admin">
+            /admin
+          </Link>
+          .
+        </p>
+      </section>
+
+      <Section title="Palette">
+        <div className="grid grid-cols-4 gap-3 sm:grid-cols-6">
+          <Swatch name="ink" cssVar="--color-ink" textOn="white" />
+          <Swatch name="accent" cssVar="--color-accent" textOn="white" />
+          <Swatch name="accent-2" cssVar="--color-accent-2" textOn="white" />
+          <Swatch name="tint" cssVar="--color-tint" textOn="ink" />
+          <Swatch name="balance" cssVar="--color-balance" textOn="white" />
+          <Swatch name="possibilities" cssVar="--color-possibilities" textOn="white" />
+          <Swatch name="bronze" cssVar="--color-bronze" textOn="white" />
+          <Swatch name="silver" cssVar="--color-silver" textOn="white" />
+          <Swatch name="gold" cssVar="--color-gold" textOn="white" />
+          <Swatch name="preferred" cssVar="--color-preferred" textOn="white" />
+          <Swatch name="success" cssVar="--color-success" textOn="white" />
+          <Swatch name="olive" cssVar="--color-olive" textOn="white" />
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+      </Section>
+
+      <Section title="Type scale (PRD §5.2)">
+        <div className="flex flex-col gap-2">
+          <div className="text-display">Display · 42</div>
+          <div className="text-h1">H1 · 28</div>
+          <div className="text-h2">H2 · 22</div>
+          <div className="text-h3">H3 · 17</div>
+          <div className="text-body">Body · 15 — the workhorse paragraph size.</div>
+          <div className="text-caption text-ink-3">Caption · 12</div>
+          <div className="text-label uppercase tracking-[0.14em] text-ink-3">
+            Label · 11
+          </div>
         </div>
-      </main>
+      </Section>
+
+      <Section title="Buttons">
+        <div className="flex flex-wrap items-center gap-3">
+          <Button kind="primary">Primary</Button>
+          <Button kind="accent" icon={<Icon name="share" size={18} />}>
+            Accent
+          </Button>
+          <Button kind="ghost">Ghost</Button>
+          <Button kind="tint" iconRight={<Icon name="arrow-right" size={18} />}>
+            Tint
+          </Button>
+          <Button kind="primary" size="sm">
+            Small
+          </Button>
+          <Button kind="primary" size="lg">
+            Large (56px CTA)
+          </Button>
+        </div>
+      </Section>
+
+      <Section title="Chips · Tier · Progress">
+        <div className="flex flex-wrap items-center gap-3">
+          <Chip active icon={<Icon name="home" size={14} />}>
+            Home
+          </Chip>
+          <Chip icon={<Icon name="academy" size={14} />}>Academy</Chip>
+          <Chip icon={<Icon name="project" size={14} />}>Projects</Chip>
+          <TierBadge tier="Bronze" />
+          <TierBadge tier="Silver" />
+          <TierBadge tier="Gold" />
+          <TierBadge tier="Preferred" />
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <TierBadge tier="Silver" compact />
+          <TierBadge tier="Gold" compact />
+        </div>
+        <Card>
+          <div className="mb-2 text-h3 font-semibold">
+            Progress to Gold
+          </div>
+          <Progress value={1840} total={2500} showCount />
+        </Card>
+      </Section>
+
+      <Section title="Cards">
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Card>
+            <div className="text-h3 font-semibold">Default card</div>
+            <p className="mt-1 text-caption text-ink-3">
+              White surface, hairline border, soft-sm shadow.
+            </p>
+          </Card>
+          <Card white={false}>
+            <div className="text-h3 font-semibold">Tint card</div>
+            <p className="mt-1 text-caption text-ink-3">
+              Warm beige (Belonging), no border.
+            </p>
+          </Card>
+        </div>
+      </Section>
+    </main>
+  );
+}
+
+function Section({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-4">
+      <h2 className="text-h2 font-semibold tracking-[-0.01em]">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
+function Swatch({
+  name,
+  cssVar,
+  textOn,
+}: {
+  name: string;
+  cssVar: string;
+  textOn: "white" | "ink";
+}) {
+  return (
+    <div
+      className="flex h-20 flex-col justify-between rounded-lg p-2.5 text-label font-bold uppercase tracking-wider shadow-soft-sm"
+      style={{
+        background: `var(${cssVar})`,
+        color: textOn === "white" ? "#fff" : "var(--color-ink)",
+      }}
+    >
+      <span>{name}</span>
+      <span className="font-mono text-[10px] normal-case tracking-normal opacity-80">
+        var({cssVar})
+      </span>
     </div>
   );
 }

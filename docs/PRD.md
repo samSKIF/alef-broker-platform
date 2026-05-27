@@ -522,6 +522,22 @@ analytics, native app wrappers, AWS migration for video/scale.
   of Neue Haas Grotesk Display/Text Pro will be overridden in 1.1.2; the
   fallback stack stays `"Helvetica Neue", Inter, Helvetica, Arial, sans-serif`
   per PRD §5.2.
+- **[27 May 2026]** Tailwind v4 (CSS-config-driven) confirmed as the styling
+  stack — `tailwind.config.{js,ts}` is intentionally absent; theme tokens live
+  in `app/globals.css` inside `@theme inline`. The Tailwind v4 utility classes
+  (`text-display`, `text-h1`, `rounded-pill`, `shadow-soft-md`, `text-accent`,
+  `bg-ink`, etc.) are derived from those CSS variables.
+- **[27 May 2026]** Fallback web fonts loaded via `next/font/google`:
+  **Inter** (Latin fallback for Helvetica Neue LT Pro), **Tajawal** (Arabic
+  fallback for GE SS Two), **JetBrains_Mono** (mono). Proprietary brand
+  families are not loaded server-side; users with them installed get them via
+  the `font-family` cascade in PRD §5.2.
+- **[27 May 2026]** Curated subset of the design bundle committed to git:
+  logos to `/public`, brand-guidelines PDF to `/docs/assets`, and
+  `design/alef/project/src/store.jsx` un-ignored. The rest of `design/` is
+  gitignored.
+- **[27 May 2026]** ESLint config updated to ignore `design/**` — the
+  prototype's JSX relies on `<script>`-injected globals, not ES imports.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at launch.
 

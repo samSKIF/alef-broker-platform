@@ -268,3 +268,140 @@ sessions. Keep entries concise but complete.
   entry: (1) the GitHub remote (1.0.5); (2) deciding whether to commit a
   curated subset of `design/` (currently gitignored). Neither blocks the
   start of 1.1.
+
+### [2026-05-27 05:30] — GitHub remote live + design curate + 1.1 design system
+- **Phase / Plan item:** Phase 1 · 1.0.5 + 1.1 (full design-system foundation)
+- **Status:** DONE
+- **What I did:**
+  1. **1.0.5 — GitHub remote.** Renamed local branch `master` → `main`, added
+     `origin = https://github.com/samSKIF/alef-broker-platform.git`,
+     pushed: `git push -u origin main`. Tracking set; first push contains
+     all three prior commits (`6e24975`, `e0c1fff`, `1ecb4bd`, `591162e`).
+  2. **Design curation.** Copied `design/alef/project/assets/logo-light.png`
+     and `logo-dark.png` to `/public`. Copied
+     `ALEF-Brand-Guidelines-Latest.pdf` to `/docs/assets/`. Rewrote the
+     `design/` rule in `.gitignore` to use `/design/**` with explicit
+     directory-chain un-ignores for `design/alef/project/src/store.jsx` so
+     just that one file is tracked while the rest of the bundle stays out.
+     Verified via `git check-ignore -v`.
+  3. **1.1.1 — Tailwind theme tokens.** Rewrote `app/globals.css` (Tailwind
+     v4 conventions — no `tailwind.config.js`, theme tokens declared in CSS):
+     `@theme inline` block surfaces every PRD §5.1 color as a Tailwind
+     utility (`bg-ink`, `text-accent`, `border-line`, …), plus the design's
+     non-conflicting additions (ink-2/3/4 grays, success, olive), all tier
+     colors, the four shadows (soft-sm/md/lg + accent), the six radii (sm/
+     md/lg/xl/2xl/pill), and the seven-step type scale.
+  4. **1.1.2 — Typography.** Updated `app/layout.tsx` to load **Inter**,
+     **Tajawal** (Arabic, 400/500/700), and **JetBrains_Mono** via
+     `next/font/google` with `display: "swap"`. Wired CSS variables
+     `--font-inter`, `--font-tajawal`, `--font-jbm` onto `<html>`.
+     `globals.css` composes the resolved `--font-sans` /  `--font-ar` /
+     `--font-mono` stacks per PRD §5.2 — Helvetica Neue LT Pro is primary
+     for Latin with Inter as the Google-Fonts fallback for users who don't
+     have HN LT Pro installed.
+  5. **1.1.3 — Logo assets.** Copied during step 2; added a typed
+     `Logo` component (`components/shared/Logo.tsx`) using `next/image`
+     with a `dark` prop that swaps between `logo-light.png` and
+     `logo-dark.png`. PNG aspect honored (~1.78:1).
+  6. **1.1.4 — Primitives.** Built nine TypeScript components in
+     `components/shared/`:
+     - `Button.tsx` — `kind: primary|accent|ghost|tint`, `size: sm|md|lg`
+       (lg = 56 px CTA per PRD §5.4), `icon`/`iconRight`/`full` slots.
+     - `Card.tsx` — `white` toggle, `elevated` shadow tier, numeric `pad`.
+     - `Chip.tsx` — `active` toggle for nav/segmented use.
+     - `Progress.tsx` — `value`/`total` linear bar with `showCount` option.
+     - `TierBadge.tsx` — `compact` and default presentations; tier color
+       comes from CSS vars (`color-mix` for the faint background).
+     - `Icon.tsx` — 31-name icon set ported from `design/.../icons.jsx`;
+       all 24×24, stroke 1.6, `currentColor`.
+     - `Logo.tsx` (step 5).
+     - `PhoneShell.tsx` (step 7).
+     - `AdminShell.tsx` (step 7).
+     Plus `index.ts` barrel — feature folders import from
+     `@/components/shared` only (per PRD §2 rule).
+  7. **1.1.5 — Shells.**
+     - `PhoneShell.tsx` — full-bleed on small viewports (real PWA / mobile);
+       on desktop renders as a centred 390×844 rounded device frame with
+       the design's soft shadow stack. No iOS status-bar / home-indicator
+       chrome — the OS provides those in a real PWA install.
+     - `AdminShell.tsx` — navy (Trust) sidebar 240 px wide with `ADMIN_ROUTES`
+       export, copper accent bar on the active nav link, "Live link"
+       roundtrip pill at the bottom, the design's user-pill area trimmed
+       (it depended on the in-prototype hard-coded user; we'll wire it up
+       in 1.5.1). Topbar (72 px) shows the route's title + subtitle.
+       Uses Next.js `<Link>` instead of the design's `onNav` callback.
+  8. **`/app/page.tsx` — verify page.** Replaced create-next-app boilerplate
+     with a minimal "design system check" page showing the palette as
+     swatches, the type scale, every button kind/size, chips, all 4 tier
+     badges in both presentations, the progress bar, and both card
+     surfaces. Useful for eyeball verification today; future broker /
+     admin landing pages will live under `/broker` and `/admin`. The
+     boilerplate SVGs in `/public` (`file.svg`, `globe.svg`, `next.svg`,
+     `vercel.svg`, `window.svg`) deleted — they were only referenced by
+     the template page.
+  9. **ESLint config.** Added `design/**` to `globalIgnores` in
+     `eslint.config.mjs` — the design JSX uses `<script>`-tag globals so
+     it would otherwise produce 335 `react/jsx-no-undef` errors.
+  10. **Verified:**
+      - `npm run build` → compiled in 4.3 s, TypeScript clean (11.8 s), 4
+        static pages generated. Output: `Next.js 16.2.6 (Turbopack)`.
+      - `npm run lint` → zero errors, zero warnings (after the
+        `design/**` ignore).
+- **Files changed:**
+  - Created: `public/logo-light.png`, `public/logo-dark.png`,
+    `docs/assets/ALEF-Brand-Guidelines-Latest.pdf`,
+    `components/shared/{Button,Card,Chip,Icon,Logo,PhoneShell,
+    AdminShell,Progress,TierBadge}.tsx`, `components/shared/index.ts`.
+  - Rewrote: `app/globals.css`, `app/layout.tsx`, `app/page.tsx`.
+  - Modified: `.gitignore` (design/ exception), `eslint.config.mjs`
+    (design/ ignore), `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`.
+  - Untracked-and-now-tracked: `design/alef/project/src/store.jsx`.
+  - Deleted: `components/shared/.gitkeep`,
+    `public/{file,globe,next,vercel,window}.svg`.
+- **Decisions made:**
+  - **Tailwind v4 only.** Confirmed `package.json` has `tailwindcss: ^4`;
+    used the `@theme inline` CSS-config-driven convention. No
+    `tailwind.config.js`.
+  - **Inter is the visible Latin fallback** for users without Helvetica
+    Neue LT Pro installed (it's proprietary, no license to load it
+    server-side). Per PRD §5.2 this is the documented fallback.
+  - **Tajawal for Arabic fallback.** GE SS Two is proprietary. Same
+    pattern as Latin.
+  - **All primitives are server-renderable.** Button / Card / Chip /
+    Progress / TierBadge / Icon / Logo / PhoneShell / AdminShell — no
+    `'use client'` directives anywhere in `/components/shared`. They're
+    all presentational. When the sidebar/topbar gain interactivity
+    later (1.5.1), the AdminShell can be split or marked then.
+  - **Verify page is at `/`, not under a route group.** Route groups
+    `(broker)` and `(admin)` stay empty until 1.3 / 1.5.
+  - **AppHeader / TabBar / Avatar / CommunityArt deferred** to their
+    feature folders. They're not "cross-feature primitives" — they
+    depend on store data (notifications count, broker name, project
+    images). Lifting them to `/components/shared` would push feature
+    state into shared, against the PRD §2 rule.
+- **Tested:**
+  - `npm run build` PASS — 4.3 s compile, TS 11.8 s, 4 routes prerendered.
+  - `npm run lint` PASS — 0 errors / 0 warnings.
+  - `git check-ignore -v design/alef/project/src/store.jsx` confirms the
+    un-ignore rule fires, while `tokens.jsx` and `assets/logo-light.png`
+    correctly still match the ignore rule.
+  - Did NOT run `npm run dev` interactively — `next build` validates
+    SSR rendering of every route, which is sufficient for a verify.
+- **Next:** Section **1.2 — Supabase backend.** First plan item (1.2.1) is
+  `[needs user]` — Samir creates the Supabase project. I'll guide step by
+  step.
+- **Notes for the user:**
+  1. **Repo is live on GitHub:** https://github.com/samSKIF/alef-broker-platform
+     · branch `main` · 5 commits. Tracking set; future pushes are just
+     `git push`.
+  2. **The verify page is at `/` (the root).** Run `npm run dev` and open
+     http://localhost:3000 to see all the primitives. The `<Link>`s to
+     `/broker` and `/admin` will 404 until 1.3 / 1.5 ship — that's expected.
+  3. **The brand PDF is at `docs/assets/ALEF-Brand-Guidelines-Latest.pdf`**
+     (12.5 MB; committed). The full design bundle stays out of git but is
+     under `design/` on your machine for reference.
+  4. **`store.jsx` is now tracked** — when we start 1.2.4 (seed data) I'll
+     translate its `SEED_*` arrays into Supabase INSERTs.
+  5. **Ready for 1.2?** Say "start 1.2" and I'll guide you through
+     creating the Supabase project (1.2.1) before scripting the schema
+     and seed.

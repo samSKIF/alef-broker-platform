@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // The design handoff bundle isn't part of our codebase — those JSX files
+    // rely on globals injected by <script> tags, so they trip undefined-name
+    // rules. They're a reference, not source.
+    "design/**",
   ]),
 ]);
 

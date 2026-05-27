@@ -1,26 +1,110 @@
 @import "tailwindcss";
 
+/* ─────────────────────────────────────────────────────────────────
+   Alef Broker Platform — Tailwind v4 theme tokens.
+   Source of truth: docs/PRD.md §5 (Brand & design system) and
+   the design bundle's tokens.jsx. Palette confirmed to match the
+   ALEF Brand Guidelines v02 (2026) exactly.
+   ───────────────────────────────────────────────────────────────── */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Brand palette — PRD §5.1 */
+  --color-ink: #333F48;        /* Trust / Limed Spruce — primary navy */
+  --color-card: #FFFFFF;       /* Openness */
+  --color-bg: #F7F7F7;         /* Wild Sand — app background */
+  --color-accent: #B6735C;     /* Roots / Santa Fe — copper accent, used sparingly */
+  --color-accent-2: #9A5E4A;   /* darker copper — hover/active */
+  --color-tint: #F1ECD6;       /* Belonging — warm beige */
+  --color-balance: #8797AF;    /* soft blue-grey */
+  --color-possibilities: #988FC5; /* soft purple */
+  --color-line: #E5E7EA;       /* hairlines / borders */
+
+  /* Trust-derived ink scale (from design tokens.jsx) */
+  --color-ink-2: #5C6770;      /* 70% Trust */
+  --color-ink-3: #8A929B;      /* 55% Trust */
+  --color-ink-4: #B8BDC2;      /* 30% Trust */
+  --color-ink-on-accent: #FFFFFF;
+
+  /* Tier rail — PRD §5.1 */
+  --color-bronze: #B07A5C;
+  --color-silver: #A8AEB4;
+  --color-gold: #C9A464;
+  --color-preferred: #333F48;
+
+  /* Utility (design additions, non-conflicting) */
+  --color-success: #5C8A6B;
+  --color-olive: #7A8470;
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  /* Surface the palette as Tailwind color utilities (text-ink, bg-accent, …) */
+  --color-ink: var(--color-ink);
+  --color-card: var(--color-card);
+  --color-bg: var(--color-bg);
+  --color-accent: var(--color-accent);
+  --color-accent-2: var(--color-accent-2);
+  --color-tint: var(--color-tint);
+  --color-balance: var(--color-balance);
+  --color-possibilities: var(--color-possibilities);
+  --color-line: var(--color-line);
+  --color-ink-2: var(--color-ink-2);
+  --color-ink-3: var(--color-ink-3);
+  --color-ink-4: var(--color-ink-4);
+  --color-ink-on-accent: var(--color-ink-on-accent);
+  --color-bronze: var(--color-bronze);
+  --color-silver: var(--color-silver);
+  --color-gold: var(--color-gold);
+  --color-preferred: var(--color-preferred);
+  --color-success: var(--color-success);
+  --color-olive: var(--color-olive);
+
+  /* Typography — PRD §5.2.
+     Helvetica Neue LT Pro is proprietary; users who don't have it
+     installed fall through to Inter (loaded via next/font) and then to
+     system Helvetica. */
+  --font-sans: "Helvetica Neue LT Pro", "Helvetica Neue", var(--font-inter), Helvetica, Arial, sans-serif;
+  --font-ar: "GE SS Two", var(--font-tajawal), "Noto Naskh Arabic", system-ui, sans-serif;
+  --font-mono: var(--font-jbm), ui-monospace, "JetBrains Mono", monospace;
+
+  /* Type scale — PRD §5.2 (display 42 / h1 28 / h2 22 / h3 17 / body 15 / caption 12 / label 11) */
+  --text-display: 2.625rem;    /* 42 */
+  --text-display--line-height: 1.1;
+  --text-h1: 1.75rem;          /* 28 */
+  --text-h1--line-height: 1.2;
+  --text-h2: 1.375rem;         /* 22 */
+  --text-h2--line-height: 1.3;
+  --text-h3: 1.0625rem;        /* 17 */
+  --text-h3--line-height: 1.4;
+  --text-body: 0.9375rem;      /* 15 */
+  --text-body--line-height: 1.5;
+  --text-caption: 0.75rem;     /* 12 */
+  --text-caption--line-height: 1.4;
+  --text-label: 0.6875rem;     /* 11 */
+  --text-label--line-height: 1.4;
+
+  /* Radii — PRD §5.4 */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 22px;
+  --radius-2xl: 28px;
+  --radius-pill: 9999px;
+
+  /* Shadows — from design tokens.jsx */
+  --shadow-soft-sm: 0 1px 2px rgba(51, 63, 72, 0.06);
+  --shadow-soft-md: 0 4px 18px rgba(51, 63, 72, 0.07), 0 1px 2px rgba(51, 63, 72, 0.04);
+  --shadow-soft-lg: 0 18px 50px rgba(51, 63, 72, 0.10), 0 2px 6px rgba(51, 63, 72, 0.05);
+  --shadow-accent: 0 8px 22px rgba(182, 115, 92, 0.28);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/* Body baseline — Tailwind utilities can still override per element. */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-bg);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+  letter-spacing: -0.005em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
