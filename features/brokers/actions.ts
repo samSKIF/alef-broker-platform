@@ -22,6 +22,17 @@ import type { Broker } from "./types";
 // ---------------------------------------------------------------------
 // Sign-up: create the auth.users row. The broker profile (name, role,
 // brokerage, photo) is collected next at /onboarding/name.
+//
+// POC posture: we want a one-step signup with no email-verification
+// round-trip. `supabase.auth.signUp` from the publishable-key client
+// respects the project's "Confirm email" setting — if it's on (default
+// in Supabase), signUp sends a confirmation email and returns no
+// session, leaving the broker stranded at /onboarding/name with no
+// auth user. To avoid being tied to that dashboard toggle, we use the
+// service-role admin API to create the user with email already
+// confirmed, then call signInWithPassword from the session client to
+// establish the cookie. Phase 2 (real email-verification gating) can
+// flip back to the standard signUp flow.
 // ---------------------------------------------------------------------
 export async function signUpBroker(formData: FormData): Promise<void> {
   const email = ((formData.get("email") as string) || "").trim().toLowerCase();
@@ -38,17 +49,35 @@ export async function signUpBroker(formData: FormData): Promise<void> {
     throw new Error("Passwords don't match.");
   }
 
-  const sb = await createSupabaseSessionClient();
-  const { error } = await sb.auth.signUp({
+  // 1. Create the auth user with email already confirmed (service-role).
+  const admin = createSupabaseServerClient();
+  const { error: createError } = await admin.auth.admin.createUser({
     email,
     password,
-    options: {
-      // Auto-confirm in the POC — no email verification step. Phase 2
-      // can turn this on (Supabase Dashboard → Auth → Email confirm).
-      emailRedirectTo: undefined,
-    },
+    email_confirm: true,
   });
-  if (error) throw new Error(error.message);
+  if (createError) {
+    // Supabase returns a uniqueness violation when the email is
+    // already registered. Map it to a UX-friendly message that hints
+    // at the existing-account path.
+    const msg = createError.message ?? "";
+    if (/already (registered|exists)|duplicate|unique/i.test(msg)) {
+      throw new Error("That email is already registered. Try signing in instead.");
+    }
+    throw new Error(msg || "Could not create your account.");
+  }
+
+  // 2. Sign them in via the session client so the JWT cookie is set
+  //    for the redirected page. signInWithPassword writes the cookies
+  //    through @supabase/ssr's cookie adapter.
+  const sb = await createSupabaseSessionClient();
+  const { error: signInError } = await sb.auth.signInWithPassword({
+    email,
+    password,
+  });
+  if (signInError) {
+    throw new Error(signInError.message || "Account created but sign-in failed.");
+  }
 
   redirect("/onboarding/name");
 }
