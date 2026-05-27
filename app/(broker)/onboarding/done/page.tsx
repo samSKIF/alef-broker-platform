@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import {
   Avatar,
@@ -47,20 +48,28 @@ export default async function OnboardingDonePage() {
           first module to start earning toward Silver.
         </p>
 
-        <Card pad={18} className="mb-3.5">
-          <StarterRow
-            icon="academy"
-            title="Start with Foundation"
-            sub="10-min intro · 50 pts"
-          />
-        </Card>
-        <Card pad={18}>
-          <StarterRow
-            icon="project"
-            title="Explore Alef projects"
-            sub="4 active developments"
-          />
-        </Card>
+        {/* Cards link into the rest of the app — /academy shows the
+            "pending for you" first module; /projects is the catalogue.
+            PRD §6.4 lists these as starter affordances; without an
+            href they were dead clicks. */}
+        <Link href="/academy" className="mb-3.5 block">
+          <Card pad={18}>
+            <StarterRow
+              icon="academy"
+              title="Start with Foundation"
+              sub="10-min intro · 50 pts"
+            />
+          </Card>
+        </Link>
+        <Link href="/projects" className="block">
+          <Card pad={18}>
+            <StarterRow
+              icon="project"
+              title="Explore Alef projects"
+              sub="4 active developments"
+            />
+          </Card>
+        </Link>
       </div>
 
       <div className="px-5 pb-9 pt-5">
