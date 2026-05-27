@@ -8,13 +8,20 @@ import {
   Progress,
   TierBadge,
 } from "@/components/shared";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-// Phase 1 · 1.1 verify page — a quick design-system check.
-// Renders every primitive against the brand palette so we can eyeball that
-// tokens, typography, and components are wired correctly. Real broker /
-// admin routes go under /broker and /admin in section 1.3 / 1.5.
+// Phase 1 · 1.1 + 1.2 verify page — design system check + DB sanity check.
+// The DB section confirms the typed Supabase client (1.2.5) is wired against
+// the seeded schema (1.2.2–1.2.4). Real broker / admin routes come in 1.3 / 1.5.
+export const dynamic = "force-dynamic";
 
-export default function Home() {
+export default async function Home() {
+  const sb = createSupabaseServerClient();
+  const [{ count: brokerCount }, { data: projects }] = await Promise.all([
+    sb.from("brokers").select("*", { count: "exact", head: true }),
+    sb.from("projects").select("id, name, status").order("name"),
+  ]);
+
   return (
     <main className="mx-auto flex max-w-4xl flex-col gap-10 px-6 py-12">
       <header className="flex items-center justify-between border-b border-line pb-6">
@@ -130,6 +137,29 @@ export default function Home() {
             </p>
           </Card>
         </div>
+      </Section>
+
+      <Section title="DB sanity (Supabase wiring)">
+        <Card>
+          <div className="text-h3 font-semibold">
+            {brokerCount} brokers seeded
+          </div>
+          <p className="mt-1 text-caption text-ink-3">
+            Fetched via <code className="font-mono">createSupabaseServerClient()</code> at
+            request time. Confirms 1.2.2–1.2.6 are end-to-end wired.
+          </p>
+          <ul className="mt-3 flex flex-col gap-1 text-body">
+            {projects?.map((p) => (
+              <li
+                key={p.id}
+                className="flex items-baseline justify-between border-t border-line py-1.5 first:border-t-0"
+              >
+                <span className="font-semibold">{p.name}</span>
+                <span className="text-caption text-ink-3">{p.status}</span>
+              </li>
+            ))}
+          </ul>
+        </Card>
       </Section>
     </main>
   );

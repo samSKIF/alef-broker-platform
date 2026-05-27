@@ -405,3 +405,158 @@ sessions. Keep entries concise but complete.
   5. **Ready for 1.2?** Say "start 1.2" and I'll guide you through
      creating the Supabase project (1.2.1) before scripting the schema
      and seed.
+
+### [2026-05-27 06:30] — Section 1.2 done (Supabase backend, all six items)
+- **Phase / Plan item:** Phase 1 · 1.2 Supabase backend (1.2.1 – 1.2.6)
+- **Status:** DONE
+- **What I did:**
+  1. **1.2.1 — Project created via MCP.** Loaded the Supabase MCP tools
+     (`list_organizations`, `create_project`, etc.) and discovered the
+     server is already authenticated against Samir's account (DEvsam org;
+     one existing project `veltrovault-dev`). Offered Samir a choice of
+     manual UI vs MCP-assisted creation; he picked MCP. First create
+     attempt failed because Samir's account was at the 2-active-free-
+     project Supabase limit; he upgraded the DEvsam org so a paid project
+     could be created at $10/month (confirmed cost via `confirm_cost`).
+     A subsequent `create_project` then hit a transient
+     `createInitialAPIKeys` backend error; retrying with a fresh cost
+     confirmation succeeded. Project status went `UNKNOWN → COMING_UP →
+     ACTIVE_HEALTHY` in ~60 s.
+     - **Project ref:** `qiowxcaofwjahlwycwbl`
+     - **Region:** `eu-central-1` (Frankfurt — best mix of UAE latency and
+       region maturity)
+     - **URL:** `https://qiowxcaofwjahlwycwbl.supabase.co`
+     - **Publishable key** (`sb_publishable_70qWs4X6h-yx4JwFGIo6Ew_lsGuSeyy`)
+       pulled via `get_publishable_keys` and written to `.env.local`.
+     - **Service-role key** (`sb_secret_JC...`) pasted by Samir from the
+       dashboard; validated via two curls — `/rest/v1/` (HTTP 200) and
+       `/auth/v1/admin/users` (service-role-only, HTTP 200 with empty user
+       list as expected for a fresh project).
+     - Renamed env var `NEXT_PUBLIC_SUPABASE_ANON_KEY` →
+       `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` to match the modern key
+       format; `.env.example` updated.
+  2. **1.2.2 — Schema migration `create_phase1_schema`.** Applied via
+     `apply_migration`. Six tables in `public` per PRD §8: `projects`,
+     `campaigns`, `modules`, `brokers`, `notifications`, `activity`. text
+     PKs for the entity tables (natural-key slugs from store.jsx), uuid
+     PK on `activity` with `gen_random_uuid()`. FKs:
+     `modules.project_id → projects.id` (ON DELETE SET NULL),
+     `activity.broker_id → brokers.id` (ON DELETE CASCADE),
+     `activity.project_id → projects.id`, `activity.module_id → modules.id`.
+     Three indexes on `activity` (broker_id, type, created_at desc).
+     PRD §8.3's `when` column renamed `when_at` (Postgres reserved word).
+     RLS intentionally **left off** (Phase 1 POC posture, see PRD §11 +
+     PROJECT_PLAN 2.7); Supabase advisor flagged this and I surfaced
+     it to Samir per the tool's instruction.
+  3. **1.2.3 — Storage buckets.** `storage.buckets` insert for
+     `project-images`, `brochures`, `videos`. All `public = true` so anon
+     fetch via the public URL works; writes still require the service-role
+     key. No `storage.objects` RLS policies yet — same Phase 1 posture.
+  4. **1.2.4 — Seed `seed_phase1_data`.** Translated `store.jsx` verbatim:
+     - 4 projects (hayyan / al-mamsha / olfah / palace; all
+       `published = true, ai_indexed = true`).
+     - 5 campaigns (c1–c5; c5 is the `kind = commission` card with no image).
+     - 7 modules (m1–m7; 4 online + 3 live; m1's quiz JSON normalized
+       from `{q, a, correct}` → `{q, options, correct}` per PRD §8.3).
+     - 8 brokers (b1 Layla → b8 Karim, matching SEED_BROKERS).
+     - 1 notification (n1 — the "Tomorrow · Hayyan site visit" reminder).
+     - **442 activity rows** generated via a CTE + `generate_series` from
+       the per-broker counts in SEED_BROKERS:
+       `visit_booked = 64, brochure_shared = 282, module_completed = 96`.
+       project_id / module_id assigned round-robin; `created_at`
+       distributed across the past 7 days. Verified with a group-by query
+       that every broker's counts match SEED_BROKERS exactly.
+     - **Network-level weekly + funnel rollups (PRD §8.7)** intentionally
+       **NOT** generated as activity rows — they'd require ~20 phantom
+       brokers and ~2000 extra rows. Will stay as code constants for
+       Phase 1; real aggregation is Phase 2.
+     - Campaign `objectPosition` (cosmetic CSS image-crop value in the
+       prototype) dropped — no PRD column.
+  5. **1.2.6 — TypeScript types.** Generated via
+     `mcp__supabase__generate_typescript_types` and saved verbatim to
+     `/types/database.ts`. Replaced the placeholder `/types/.gitkeep`.
+  6. **1.2.5 — Supabase clients.**
+     - Installed `@supabase/supabase-js@^2.106.2` and the `server-only`
+       marker package.
+     - `lib/supabase/client.ts`: `createSupabaseBrowserClient()` — uses
+       `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, safe to import in client
+       components.
+     - `lib/supabase/server.ts`: `createSupabaseServerClient()` — uses
+       `SUPABASE_SERVICE_ROLE_KEY`, guarded with `import "server-only"` so
+       any accidental client-side import becomes a build error. Auth
+       options disabled (`persistSession: false, autoRefreshToken: false`).
+     - Both factories typed via `SupabaseClient<Database>`, so every
+       `.from('projects').select(...)` returns properly inferred rows.
+     - Removed the `.gitkeep` from `lib/supabase/`.
+  7. **End-to-end verify on `/`.** Added a small "DB sanity (Supabase
+     wiring)" section to the existing `app/page.tsx` design-system check.
+     Server-renders at request time (`export const dynamic = 'force-dynamic'`)
+     via `createSupabaseServerClient()`. Shows `{brokerCount} brokers
+     seeded` plus the 4 project names + status from a live query.
+     Confirms 1.2.2 → 1.2.6 are end-to-end wired.
+- **Files changed:**
+  - Created: `lib/supabase/client.ts`, `lib/supabase/server.ts`,
+    `types/database.ts`.
+  - Modified: `.env.example` (publishable key env-var name + comment),
+    `.env.local` (real URL + publishable key written; Samir pasted
+    service_role), `app/page.tsx` (DB sanity section), `package.json` +
+    `package-lock.json` (added `@supabase/supabase-js`, `server-only`),
+    `docs/PRD.md`, `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md` (this entry).
+  - Deleted: `lib/supabase/.gitkeep`, `types/.gitkeep`.
+  - DB side (not in git): two migrations `create_phase1_schema` and
+    `seed_phase1_data` applied to project `qiowxcaofwjahlwycwbl`; three
+    storage buckets created.
+- **Decisions made:**
+  - **MCP-assisted project creation** (Path B from my offered options) —
+    Samir picked it.
+  - **Paid project ($10/mo).** First create hit the free-tier 2-project
+    limit on Samir's account; he upgraded the DEvsam org so the new
+    project bills as paid. Pausing the project later stops billing.
+  - **Publishable key over legacy anon JWT** — per Supabase's official
+    recommendation for new applications.
+  - **`when` → `when_at` rename** (PRD §8.3) — reserved-word avoidance.
+  - **Quiz JSON shape** uses PRD's `{ q, options, correct }`, not the
+    design's `{ q, a, correct }`.
+  - **Image columns store bare filenames** for Phase 1 — resolution to
+    `/public` or Storage URLs deferred to 1.3.9 / 1.5.4.
+  - **Network-level rollups stay as code constants** for Phase 1; only
+    per-broker activity is in `activity`.
+  - **RLS off** for all 6 tables — POC posture per PRD §11; full
+    remediation SQL recorded in WORKLOG + PROJECT_PLAN follow-ups for
+    Phase 2 item 2.7.
+  - **`server-only` import in `lib/supabase/server.ts`** as a build-time
+    guard against accidental browser-bundle leaks of the service-role key.
+  - **Factory functions** rather than module-level singletons — works
+    today and survives a future migration to `@supabase/ssr` cookie-auth
+    in Phase 2.
+- **Tested:**
+  - Service-role key validated via two curls (HTTP 200 on both
+    `/rest/v1/` and the service-role-only `/auth/v1/admin/users`).
+  - Row counts after seed: `projects 4, campaigns 5, modules 7, brokers 8,
+    notifications 1, activity 442` — exact match to plan.
+  - Per-broker activity breakdown query confirmed each broker's
+    visit / share / module-completed counts match SEED_BROKERS in
+    store.jsx **exactly**.
+  - `npm run build` → PASS (6.5 s compile, TS 6.2 s; `/` correctly
+    flagged as `ƒ Dynamic`).
+  - `npm run lint` → PASS (0 errors / 0 warnings).
+- **Next:** Section **1.3 — Broker app (mobile PWA).** Starts with 1.3.1
+  Splash, then onboarding flow into the dummy-account `brokers` row, then
+  the bottom-tab app shell.
+- **Notes for the user:**
+  1. **The Supabase project bills $10/month while active.** Pause it any
+     time at https://supabase.com/dashboard/project/qiowxcaofwjahlwycwbl/settings/general
+     ("Pause project") to stop billing without losing data — resume when
+     you want to demo. (Free-tier paused projects can also count toward
+     the project limit; just heads-up.)
+  2. **RLS is OFF on every table** — anyone holding the publishable key
+     (which we'll ship to every browser) can read and write all rows.
+     Fine for the POC's seed/sample data; do NOT pour anything sensitive
+     into this DB. Phase 2 (item 2.7) is the hardening pass.
+  3. **The `/` route is now a dynamic page** that hits the DB on every
+     request. If you'd like a static landing again post-1.3, we can
+     replace it.
+  4. **OpenAI key (1.4.1)** still pending. We'll get to it when section
+     1.4 starts.
+  5. **Ready for 1.3?** Say "start 1.3" — that's the splash + onboarding
+     + bottom-tab shell + Home / Academy / Projects / Activity screens.

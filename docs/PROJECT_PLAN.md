@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · section 1.0 + 1.1 done. GitHub remote live at `samSKIF/alef-broker-platform` (branch `main`). Design system foundation built: brand palette + typography mapped to Tailwind v4 `@theme`; logos in `/public`; primitives (Button, Card, Chip, Progress, TierBadge, Icon, Logo) + PhoneShell + AdminShell in `/components/shared`. Build + lint clean. 12 / 48 Phase-1 items done. Next: section **1.2 — Supabase backend** (1.2.1 will need user to create the Supabase project).**
+**Phase 1 · sections 1.0 + 1.1 + 1.2 done. Supabase backend live: project `alef-broker-platform` (ref `qiowxcaofwjahlwycwbl`, eu-central-1, $10/mo). All 6 PRD §8 tables created and seeded verbatim from store.jsx (4 projects, 5 campaigns, 7 modules, 8 brokers, 1 notification, 442 activity rows matching SEED_BROKERS per-broker counts). Three public storage buckets ready. Typed `@/lib/supabase/{client,server}.ts` wired against generated `/types/database.ts`. App `/` verify page now does a live DB read at request time — build + lint clean. 18 / 48 Phase-1 items done. Next: section **1.3 — Broker app (mobile PWA)**.**
 
 ---
 
@@ -40,12 +40,12 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.1.5 Build the phone shell + the admin shell (sidebar/topbar) layouts in `/components/shared` — `PhoneShell` (full-screen on mobile / 390×844 device frame on desktop) and `AdminShell` (navy sidebar + topbar + content; `Link`-based nav).
 
 ### 1.2 — Supabase backend
-- [ ] 1.2.1 **[needs user]** Guide Samir to create the Supabase project + keys
-- [ ] 1.2.2 Create all tables per PRD §8 (projects, campaigns, modules, brokers, notifications, activity)
-- [ ] 1.2.3 Set up Supabase Storage buckets (project images, brochures, videos)
-- [ ] 1.2.4 Write seed data (the 4 communities, modules, campaigns, sample brokers, sample activity)
-- [ ] 1.2.5 Build the Supabase client + typed query helpers in `/lib/supabase`
-- [ ] 1.2.6 Generate shared TypeScript types in `/types`
+- [x] 1.2.1 Project created via Supabase MCP under DEvsam org — `alef-broker-platform` (ref `qiowxcaofwjahlwycwbl`, eu-central-1, $10/mo). URL + publishable key in `.env.local`; service-role key pasted by Samir and validated via `/auth/v1/admin/users` returning HTTP 200.
+- [x] 1.2.2 Six tables in `public` schema per PRD §8 (`projects`, `campaigns`, `modules`, `brokers`, `notifications`, `activity`) with PRD-correct types, FK constraints, and three activity indexes. One column rename: PRD §8.3's `when` → `when_at` (Postgres reserved word).
+- [x] 1.2.3 Three public Storage buckets created via `storage.buckets` insert: `project-images`, `brochures`, `videos`.
+- [x] 1.2.4 Seed data inserted from `design/alef/project/src/store.jsx` verbatim (snake_case rename only): 4 projects, 5 campaigns, 7 modules, 8 brokers, 1 notification, plus 442 activity rows (64 visit_booked + 282 brochure_shared + 96 module_completed) matching the per-broker counts in SEED_BROKERS exactly.
+- [x] 1.2.5 Typed Supabase clients in `/lib/supabase/`: `client.ts` (browser, publishable key) and `server.ts` (service-role, `server-only` guarded). Database generic flows through so `.from('projects').select(...)` is fully typed.
+- [x] 1.2.6 TypeScript types generated via MCP into `/types/database.ts`.
 
 ### 1.3 — Broker app (mobile PWA)
 - [ ] 1.3.1 Splash screen (animated logo, auto-advance)
@@ -156,4 +156,8 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- _(none — 1.0.5 + design + typography all resolved)_
+- _(none active for 1.3)_
+
+### Outstanding follow-ups (do NOT block 1.3)
+- **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** Phase 1's 6 public tables have Row Level Security **disabled**, so anyone with the publishable key (which ships to every broker's browser) can read AND write every row. This is intentional for the POC per PRD §11, but Supabase's advisor flagged it as critical and it MUST be addressed before any production launch.
+- **[2026-05-27] Project image uploads.** `cover_image` and `image` columns currently store bare filenames (`hayyan-panoramic.webp`, etc.) — the app code in 1.3.9 / 1.5.4 will need to either: (a) copy the asset files from `design/alef/project/assets/` into `/public/projects/`, or (b) upload them to the `project-images` Supabase Storage bucket and store full public URLs. Pick when we hit 1.3.9.

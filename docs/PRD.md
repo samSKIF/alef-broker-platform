@@ -538,6 +538,37 @@ analytics, native app wrappers, AWS migration for video/scale.
   gitignored.
 - **[27 May 2026]** ESLint config updated to ignore `design/**` — the
   prototype's JSX relies on `<script>`-injected globals, not ES imports.
+- **[27 May 2026]** Supabase project created at `qiowxcaofwjahlwycwbl`
+  (`alef-broker-platform`, eu-central-1, $10/month — DEvsam org's free
+  slot was unavailable so this is a paid project; pausing it any time stops
+  billing).
+- **[27 May 2026]** Client env var renamed `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+  → `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`. We use the modern Supabase
+  publishable key (`sb_publishable_...`) instead of the legacy JWT-anon
+  key, per Supabase's recommendation for new applications. supabase-js v2
+  accepts either format identically; the rename is for clarity.
+- **[27 May 2026]** Column rename: PRD §8.3 lists a `when` column on
+  `modules` — it became `when_at` in Postgres because `when` is a reserved
+  word and quote-escaping it in every query is friction with no benefit.
+- **[27 May 2026]** Quiz JSON normalized to PRD §8.3 shape
+  `{ q, options[], correct }`. The design's `store.jsx` used `{ q, a, correct }`;
+  the data is identical but the field name was updated when seeded.
+- **[27 May 2026]** Campaign `objectPosition` (CSS `object-position` value
+  for image crop) was carried in the design's `store.jsx` but has no PRD
+  column. **Dropped from the seed** — cosmetic-only; we can re-introduce a
+  column or a `meta jsonb` if the demo needs the exact crop.
+- **[27 May 2026]** PRD §8.7 "derived" weekly + funnel rollups stay as
+  **constants in code for Phase 1** (not aggregated from the `activity`
+  table). The seeded activity has exactly the per-broker counts from
+  SEED_BROKERS, which is too small to look like the design's network-wide
+  network. Wiring real aggregation is Phase 2.
+- **[27 May 2026]** Project image columns (`cover_image`, campaign `image`)
+  store bare filenames for Phase 1. Resolution to full URLs (local `/public/`
+  vs Supabase Storage) is deferred to 1.3.9 / 1.5.4.
+- **[27 May 2026]** Row Level Security is **disabled** on all 6 tables for
+  Phase 1 (intentional — POC has dummy onboarding, no real users). Supabase
+  advisor flagged this as critical; PROJECT_PLAN item 2.7 owns the
+  remediation in Phase 2.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at launch.
 
