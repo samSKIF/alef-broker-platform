@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.3 done. The broker PWA is end-to-end functional: splash → welcome → onboarding (writes a new Bronze broker + cookie) → home dashboard → academy (with module detail + Mark complete) → projects list → project detail (4 tabs) → branded brochure share (WhatsApp/email + activity log) → booking (logs visit_booked + redirects to ticket) → notifications feed → activity dashboard (engagement ring + breakdown + timeline). 15 broker-app routes building cleanly under `app/(broker)`; AppHeader + TabBar in `/components/shared`; per-feature components under `features/<name>/components`. Build + lint clean. 33 / 48 Phase-1 items done. Next: section **1.4 — Ask Alef AI assistant** (1.4.1 will need the user to supply an OpenAI key).**
+**Phase 1 · sections 1.0–1.4 done. Ask Alef AI assistant live: config-driven (instructions + knowledge sources stored in new `ai_config` / `ai_sources` tables, edited later from the admin AI Training screen 1.5.8). `/api/ask-alef` streams OpenAI chat completions; `/ask-alef` chat surface (avatar with thinking-aura, message bubbles, streaming, suggestion chips) is reachable from a floating FAB on Home. OpenAI key validated. Also: `/welcome` now has a "Demo · Continue as Layla Hassan" form button (server action) that signs in as the pre-seeded broker b1 so the CEO demo opens with rich activity. 39 / 49 Phase-1 items done (1 new sub-item added at 1.5.8). Build + lint clean. Next: section **1.5 — Admin console (desktop)**.**
 
 ---
 
@@ -65,21 +65,22 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.3.15 Activity dashboard — `/activity` with `EngagementRing` SVG (renders broker.engagement_score 0–100), breakdown bars (visits/shares/modules vs target ceilings), 3 stat tiles, and a recent-activity timeline that joins project + module names client-side.
 
 ### 1.4 — Ask Alef AI assistant
-- [ ] 1.4.1 **[needs user]** Guide Samir to get an OpenAI API key
-- [ ] 1.4.2 Server route `/app/api/ask-alef` — OpenAI call, brochure context
-- [ ] 1.4.3 Extract & store brochure text for indexed projects
-- [ ] 1.4.4 Tight system prompt — restrict to Alef projects only
-- [ ] 1.4.5 Ask Alef chat UI — streaming, project cards, sources
-- [ ] 1.4.6 Floating "Ask Alef" button on Home → opens chat
+- [x] 1.4.1 OpenAI API key in `.env.local`; validated against `/v1/chat/completions` (HTTP 200, `gpt-4o-mini` reply).
+- [x] 1.4.2 Server route `/app/api/ask-alef/route.ts` — POSTs `{messages}`, loads `ai_config` + enabled `ai_sources` from DB, calls OpenAI Chat Completions with `stream: true`, pipes deltas back as plain-text chunks. Caps at last 16 turns + 4 000 chars per user message.
+- [x] 1.4.3 Brochure text stored in `ai_sources` (new table) — seeded with one row per indexed project (Hayyan / Al Mamsha / Olfah / Palace Residences). Admin's AI Training screen (1.5.8) will let Samir edit / add / disable sources without code changes.
+- [x] 1.4.4 Tight system prompt held in `ai_config.instructions` (new table) — restricts answers to Alef projects, politely declines off-topic, asks broker to check brochure / book a visit when not in sources, brand-on-tone copy. Editable from 1.5.8.
+- [x] 1.4.5 Ask Alef chat UI at `/ask-alef`: `AlefAIAvatar` brand-derived mark with rotating conic-gradient aura, message bubbles (navy user pill / white assistant bubble with avatar), streaming chunks rendered live, 3-up suggestion chips on cold start, typing-dot indicator, input pill with Enter-to-send.
+- [x] 1.4.6 Floating "Ask Alef AI" button on `/home` — `AskAlefFAB` pill above the tab bar with rotating-aura avatar and copper halo; links to `/ask-alef`.
 
 ### 1.5 — Admin console (desktop)
-- [ ] 1.5.1 Admin shell — navy sidebar, topbar, routing between 6 screens
+- [ ] 1.5.1 Admin shell — navy sidebar, topbar, routing between the admin screens
 - [ ] 1.5.2 Overview / Metrics — KPIs, weekly chart, distribution, funnel, leaderboard
 - [ ] 1.5.3 Brokers — roster table + drill-down panel
 - [ ] 1.5.4 Projects — list + REAL authoring form → writes `projects` + Storage
 - [ ] 1.5.5 Academy — list + REAL create-module form + quiz builder → writes `modules`
 - [ ] 1.5.6 Campaigns — list + REAL create form + live preview → writes `campaigns`
 - [ ] 1.5.7 Push notifications — REAL compose form + targeting + preview → writes `notifications`
+- [ ] 1.5.8 **AI Training** — edit the AI's system instructions, model knobs (`gpt-4o-mini` + temperature + max-tokens), and the knowledge-source library (add / edit / toggle / delete the brochure-text entries in `ai_sources`). Optional: file upload that extracts text into a source row. Added 2026-05-27 alongside the config-driven AI in 1.4.
 
 ### 1.6 — The connection (admin ↔ broker)
 - [ ] 1.6.1 Publish project (admin) → appears in broker Projects + AI sources
@@ -177,15 +178,40 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - **[2026-05-27] URL convention.** Broker app at root URLs (`/`,
   `/home`, `/projects`, …); admin will live under `/admin/*`. PRD §2's
   route groups stay as folder names (URL-invisible).
+- **[2026-05-27] Config-driven AI.** The AI's system prompt + model knobs
+  live in a new `ai_config` table (singleton "default" row), and its
+  knowledge corpus lives in a new `ai_sources` table (one row per
+  brochure / doc / note). The `/api/ask-alef` route handler reads both at
+  request time, so admin's AI Training screen (1.5.8) edits the AI's
+  behaviour without code changes. Phase 1 intentionally keeps it simple
+  per PRD §9 — full source text passes into the system prompt; vector /
+  embeddings retrieval is Phase 2 (PROJECT_PLAN 2.5).
+- **[2026-05-27] OpenAI model.** Default `gpt-4o-mini` (cheapest current
+  OpenAI model, ~$0.15/$0.60 per million input/output tokens). Switchable
+  via `ai_config.model` without a redeploy.
+- **[2026-05-27] Streaming wire format.** `/api/ask-alef` returns raw
+  delta text as `Content-Type: text/plain; charset=utf-8` chunked body
+  (not SSE). Client uses `fetch` + `ReadableStream` reader; rendering is
+  a `setMessages` update per chunk.
+- **[2026-05-27] /ask-alef sits OUTSIDE the (broker)(app) layout.** Its
+  own bottom input bar would clash with the floating tab bar; the chat
+  is a full-screen surface with a back-link to `/home` instead.
+- **[2026-05-27] Demo affordance on /welcome.** A "Demo · Continue as
+  Layla Hassan" form button (server action `continueAsDemoBroker`) sets
+  the `broker_id` cookie to `b1` and redirects to `/home`. POC-only, so
+  the CEO demo opens with a populated dashboard without walking through
+  onboarding. Replaces the previously-broken "Already enrolled? Sign in"
+  link.
 
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- _(none active for 1.4)_
+- _(none active for 1.5)_
 
-### Outstanding follow-ups (do NOT block 1.4)
-- **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** Phase 1's 6 public tables have Row Level Security **disabled**, so anyone with the publishable key (which ships to every broker's browser) can read AND write every row. This is intentional for the POC per PRD §11, but Supabase's advisor flagged it as critical and it MUST be addressed before any production launch.
-- **[2026-05-27] Fresh-onboarded brokers see empty dashboards.** The activity dashboard, Academy tier rail and snapshot card all read from the live broker row + activity table. A demo user who walks through onboarding becomes a Bronze, 0-point broker with no activity — the dashboard looks sparse. For the CEO demo we'll want either: (a) a "Continue as Layla (demo)" affordance on `/welcome`, or (b) manually setting the `broker_id` cookie to `b1`. Decide at 1.8.1.
+### Outstanding follow-ups (do NOT block 1.5)
+- **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** All public tables (now 8 with `ai_config` + `ai_sources`) have Row Level Security **disabled**. Intentional POC posture per PRD §11; remediation owned by Phase 2 item 2.7. Note `ai_config` and `ai_sources` need particular care since they store the system prompt — must be admin-only writable in production.
+- **[2026-05-27] Fresh-onboarded brokers see empty dashboards — RESOLVED via the new "Demo · Continue as Layla" affordance on /welcome.** Real-onboarded brokers still hit the sparse state by design; that's fine for actual usage.
 - **[2026-05-27] Engagement-score recompute.** The Activity dashboard reads the **stored** `engagement_score` from the brokers row. New activity doesn't change it until Phase 2 wires the live composite-score recompute (PRD §8.8).
 - **[2026-05-27] Network rollups.** Admin Overview's weekly multi-series chart + activity→transaction funnel will stay as code constants for Phase 1; real aggregation over `activity` is Phase 2.
 - **[2026-05-27] Quiz-taking flow.** Module detail offers a "Mark complete" button only; full quiz UI is Phase 2 per PRD §6.7.
+- **[2026-05-27] OpenAI cost cap.** No hard-stop on per-conversation cost yet — request handler caps tokens (`max_completion_tokens` from `ai_config`, default 600) and trims context (last 16 turns, 4 000 chars per user message). A real budget guard (per-broker spend, per-day cap) is Phase 2.

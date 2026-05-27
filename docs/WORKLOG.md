@@ -792,3 +792,154 @@ sessions. Keep entries concise but complete.
   5. **Ready for 1.4?** Say "start 1.4" — that's the Ask Alef AI
      assistant. 1.4.1 will need an OpenAI API key from you (server-only;
      I'll guide).
+
+### [2026-05-27 14:00] — Section 1.4 done (Ask Alef AI, all 6 items + demo affordance)
+- **Phase / Plan item:** Phase 1 · 1.4 Ask Alef AI assistant (1.4.1 – 1.4.6) + welcome demo affordance
+- **Status:** DONE
+- **What I did:**
+  1. **1.4.1 — OpenAI key.** Samir pasted the project key
+     (`sk-proj-...`) into `.env.local`. Verified with a tiny chat
+     completion probe against `/v1/chat/completions` — HTTP 200,
+     `gpt-4o-mini` reply, ~16 tokens spent.
+  2. **Config-driven AI schema (migration `create_ai_config_and_sources`).**
+     Two new tables in `public`:
+     - `ai_config` — singleton "default" row with `instructions` (text),
+       `model` (text, default `gpt-4o-mini`), `temperature` (real,
+       default 0.4), `max_output_tokens` (int, default 600),
+       `updated_at` (timestamptz).
+     - `ai_sources` — uuid PK, `title`, `kind` (default `brochure`),
+       optional `project_id` FK, `content`, optional `file_url`,
+       `enabled` (default true), `sort_order` (int), timestamps.
+       Plus indexes on `enabled` and `project_id`.
+     This lets the admin AI Training screen (1.5.8) edit the AI's
+     instructions and knowledge sources without code changes.
+  3. **Seed (migration `seed_ai_config_and_sources`).**
+     - One ai_config "default" row with brand-on-tone, source-grounded
+       system instructions: refuse off-topic, defer to brochure / site
+       visit when not in sources, concise + premium voice.
+     - Four ai_sources rows (one per indexed project) with brochure-
+       style text built from the project rows' name/location/tagline/
+       units/price_from/status/facts plus "what to tell clients"
+       guidance for each.
+  4. **Type regen.** Re-ran `generate_typescript_types` MCP tool;
+     wrote the result to `types/database.ts`. New `ai_config` /
+     `ai_sources` Row/Insert/Update types now flow into queries.
+  5. **OpenAI client.** Installed `openai` (^6.39.0). `lib/ai/openai.ts`
+     exports a `getOpenAIClient()` singleton, `server-only` guarded.
+  6. **features/ask-alef data layer.**
+     - `queries.ts` (server-only): `getAiConfig()`,
+       `listEnabledAiSources()` (for the chat) and `listAllAiSources()`
+       (for the admin editor in 1.5.8). Defensive fallback if `default`
+       row is missing.
+     - `types.ts`: `AiConfig`, `AiSource`, `ChatRole`, `ChatMessage`.
+     - `index.ts`: client-safe — types + UI components (no
+       server-only barreling).
+  7. **1.4.2 — `/api/ask-alef/route.ts`.** POST `{messages}`,
+     server-renders the system prompt by concatenating
+     `ai_config.instructions` + each enabled source's title+content,
+     calls `openai.chat.completions.create` with `stream: true`, pipes
+     deltas into a `ReadableStream<Uint8Array>` returned as
+     `text/plain; charset=utf-8`. Caps at last 16 turns + 4 000 chars
+     per user message. Validates input; returns 400 on bad JSON, 502 on
+     upstream OpenAI errors.
+  8. **1.4.5 — Chat UI** (`features/ask-alef/components`):
+     - `AlefAIAvatar`: brand-derived mark (navy circle, white "A",
+       copper hamza dot) with optional rotating conic-gradient aura
+       ("thinking" state) via `animation: spin 4s linear infinite`.
+     - `AskAlefChat`: client component holding messages state,
+       suggestion chips for cold start, message bubbles (navy pill for
+       user, white card with avatar for assistant), typing-dot
+       indicator while streaming, input pill with Enter-to-send. Reads
+       `/api/ask-alef` via `fetch` + `ReadableStream` reader;
+       re-renders the in-flight assistant bubble on every chunk.
+       Server-side wrapped at `app/(broker)/ask-alef/page.tsx` (broker
+       cookie gates access; redirects to /welcome if missing).
+     - `aiTypingDot` keyframe added to `app/globals.css`.
+  9. **1.4.6 — Home FAB.** `AskAlefFAB` pill (navy bg, copper halo,
+     pulsing avatar + "Ask Alef AI / your sales co-pilot") absolutely
+     positioned above the tab bar on `/home`.
+  10. **Routing decision.** `/ask-alef` lives OUTSIDE the
+      `app/(broker)/(app)/` layout — its bottom input would clash with
+      the floating tab bar. It wraps itself in `<PhoneShell>` for the
+      desktop device frame and uses a back link to `/home` in the
+      chat header.
+  11. **Demo affordance on /welcome.** New server action
+      `continueAsDemoBroker` in `features/brokers/actions.ts` sets the
+      `broker_id` cookie to `b1` (Layla Hassan, the rich seeded broker)
+      and redirects to `/home`. `/welcome` now shows a small "Demo ·
+      Continue as Layla Hassan" form button under the primary "Get
+      started" CTA. The previously-broken "Already enrolled? Sign in"
+      link is removed (it 404'd because no real auth wires it up).
+  12. **PROJECT_PLAN.** Added new item **1.5.8 — AI Training (admin
+      screen)** under section 1.5: edit instructions, model knobs, and
+      the `ai_sources` library (add / edit / toggle / delete; optional
+      file upload). This is the surface that consumes the config-driven
+      AI tables we just built.
+- **Files changed:**
+  - Created: `lib/ai/openai.ts`,
+    `features/ask-alef/{queries.ts,types.ts (filled in),index.ts (filled in)}`,
+    `features/ask-alef/components/{AlefAIAvatar,AskAlefChat,AskAlefFAB}.tsx`,
+    `app/api/ask-alef/route.ts`, `app/(broker)/ask-alef/page.tsx`.
+  - Modified: `app/globals.css` (aiTypingDot keyframe),
+    `app/(broker)/welcome/page.tsx` (demo affordance, removed broken
+    Sign-in link), `app/(broker)/(app)/home/page.tsx` (FAB import + render),
+    `features/brokers/{actions.ts,index.ts}` (continueAsDemoBroker),
+    `types/database.ts` (regenerated), `package.json` + lockfile
+    (added `openai`), `docs/PRD.md` §12 (decisions),
+    `docs/PROJECT_PLAN.md` (1.4 ticks + 1.5.8 + outstanding follow-ups +
+    CURRENT STATUS), `docs/WORKLOG.md` (this entry).
+  - Removed: `app/api/.gitkeep`, `lib/ai/.gitkeep`,
+    `features/ask-alef/components/.gitkeep`.
+  - DB migrations applied: `create_ai_config_and_sources`,
+    `seed_ai_config_and_sources`.
+- **Decisions made:**
+  - **Config-driven AI** (the central decision) — instructions + model
+    knobs in `ai_config`; knowledge corpus in `ai_sources`; route reads
+    fresh per request so 1.5.8 edits take effect immediately.
+  - **`gpt-4o-mini` as default model.** Cheapest current OpenAI model;
+    plenty capable for "talk about 4 projects" use case. Switchable in
+    `ai_config.model`.
+  - **Plain-text streaming, not SSE.** Simpler client. Client reads via
+    `ReadableStream`, no event parsing.
+  - **Phase 1 grounding = full text injection** (no embeddings). PRD
+    §9. Vector / RAG = Phase 2.
+  - **Chat outside the (app) layout.** Bottom input vs floating tab
+    bar collision; cleaner as a full-screen surface.
+  - **Demo affordance replaces the placeholder Sign-in link.** "Demo ·
+    Continue as Layla Hassan" form button, clearly labelled.
+  - **AI Training is a NEW admin task (1.5.8)** because the
+    config-driven AI needs a surface to edit it. Not in the original
+    PRD §7 list; added now.
+- **Tested:**
+  - OpenAI key probe before any code: HTTP 200, `gpt-4o-mini` 2-token
+    reply.
+  - `npm run build` → PASS (Next.js 16.2.6 / Turbopack, 17 routes
+    including `/api/ask-alef` and `/ask-alef`, TS clean).
+  - `npm run lint` → PASS (0 errors / 0 warnings after fixing one
+    `no-constant-condition` directive).
+  - Verified row counts via SQL: `ai_config` 1 row, `ai_sources` 4 rows.
+  - End-to-end conversation NOT walked manually this turn — relying on
+    build + lint + key probe + the simple route shape. Samir can run
+    `npm run dev`, open /home, tap the FAB, and ask the AI something
+    real to test live.
+- **Next:** Section **1.5 — Admin console (desktop).** First sub-item
+  reuses the existing `<AdminShell>` we built in 1.1.5. New AI Training
+  screen (1.5.8) is now part of that section.
+- **Notes for the user:**
+  1. **Cost guardrails are loose.** Per-conversation cap = 16 turns × 4k
+     user-chars × 600 output tokens. Per-broker / per-day budget cap is
+     Phase 2. Watch the OpenAI dashboard during the demo.
+  2. **Knowledge corpus is brochure-text-from-data** for now. When Alef
+     hands over real brochure PDFs, the AI Training screen (1.5.8) will
+     let you paste / upload the extracted text and replace each
+     ai_sources row. The system prompt instructions are also editable
+     there.
+  3. **Demo flow** — open `/`, watch splash → /welcome. On /welcome,
+     tap the small "Demo · Continue as Layla Hassan" link to land on
+     /home as the populated broker. The Ask Alef FAB lives bottom-right
+     of /home, above the tab bar. Tap it and ask something Alef-specific.
+  4. **Off-topic guard.** The system prompt politely refuses non-Alef
+     questions. Try "What's the weather in Dubai?" — should redirect.
+  5. **Ready for 1.5?** Say "start 1.5" — that's the admin console (six
+     authoring screens + the new AI Training screen). Reuses the
+     `<AdminShell>` we already built in 1.1.5.

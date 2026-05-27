@@ -9,6 +9,7 @@ import {
   type Tier,
 } from "@/components/shared";
 import { CampaignCard } from "@/features/campaigns";
+import { AskAlefFAB } from "@/features/ask-alef";
 import { getBrokerById } from "@/features/brokers/queries";
 import { listPublishedCampaigns } from "@/features/campaigns/queries";
 import { countSentNotifications } from "@/features/notifications/queries";
@@ -175,6 +176,9 @@ export default async function HomePage() {
           />
         </div>
       </div>
+
+      {/* Floating "Ask Alef AI" — sits above the tab bar (PRD §6.5 / §6.6). */}
+      <AskAlefFAB />
     </>
   );
 }

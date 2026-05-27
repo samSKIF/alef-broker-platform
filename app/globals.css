@@ -184,3 +184,17 @@ body {
     left: 100%;
   }
 }
+
+/* Ask Alef typing-indicator dots (features/ask-alef/components/AskAlefChat). */
+@keyframes aiTypingDot {
+  0%,
+  80%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  40% {
+    opacity: 1;
+    transform: translateY(-2px);
+  }
+}

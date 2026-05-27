@@ -1,10 +1,13 @@
 import Image from "next/image";
-import Link from "next/link";
 import { Button, Icon, Logo, PhoneShell } from "@/components/shared";
+import { continueAsDemoBroker } from "@/features/brokers";
 
 // PRD §6.2 — Onboarding Welcome.
-// Hero photo top, brand logo overlay + subtle "Sign in" affordance,
-// headline + sub, "Get started" CTA → /onboarding/name.
+// Hero photo top, brand logo overlay, headline + sub, "Get started" CTA →
+// /onboarding/name. Below: a tiny "demo as Layla Hassan" form button that
+// skips onboarding and signs in as the pre-seeded broker b1 — useful for
+// the CEO demo so the dashboard opens populated. Clearly labelled "Demo
+// shortcut" so a real broker doesn't tap it by accident.
 
 export default function WelcomePage() {
   return (
@@ -19,21 +22,16 @@ export default function WelcomePage() {
           className="object-cover"
           style={{ objectPosition: "62% center" }}
         />
-        {/* Top scrim — keeps status-bar / logo legible against the photo. */}
         <div
           aria-hidden
           className="absolute inset-0 bg-gradient-to-b from-[rgba(20,28,34,0.45)] to-transparent"
         />
-        {/* Bottom fade into the page bg. */}
         <div
           aria-hidden
           className="absolute inset-x-0 bottom-0 h-[120px] bg-gradient-to-b from-transparent to-bg"
         />
         <div className="absolute inset-x-0 top-16 flex justify-center">
           <Logo height={36} dark />
-        </div>
-        <div className="absolute right-[22px] top-[70px] text-[12.5px] font-semibold tracking-[0.02em] text-white/85">
-          Sign in
         </div>
       </div>
 
@@ -61,15 +59,26 @@ export default function WelcomePage() {
         >
           Get started
         </Button>
-        <div className="mt-3.5 text-center text-[13px] text-ink-3">
-          Already enrolled?{" "}
-          <Link
-            href="/home"
-            className="font-semibold text-ink"
+
+        {/* Demo shortcut — POC-only. Skips onboarding and signs in as the
+            pre-seeded broker b1 (Layla Hassan) so the dashboard opens with
+            real activity. Form submit calls the continueAsDemoBroker
+            server action which sets the cookie + redirects. */}
+        <form
+          action={continueAsDemoBroker}
+          className="mt-3 flex justify-center"
+        >
+          <button
+            type="submit"
+            className="rounded-pill px-3 py-2 text-[12px] text-ink-3 underline decoration-ink-4 underline-offset-2 hover:text-ink"
           >
-            Sign in
-          </Link>
-        </div>
+            <span className="font-bold uppercase tracking-[0.13em] text-accent">
+              Demo
+            </span>
+            <span className="mx-1.5 text-ink-4">·</span>
+            Continue as Layla Hassan
+          </button>
+        </form>
       </div>
     </PhoneShell>
   );

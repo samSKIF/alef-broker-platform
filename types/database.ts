@@ -72,6 +72,80 @@ export type Database = {
           },
         ]
       }
+      ai_config: {
+        Row: {
+          id: string
+          instructions: string
+          max_output_tokens: number
+          model: string
+          temperature: number
+          updated_at: string
+        }
+        Insert: {
+          id: string
+          instructions: string
+          max_output_tokens?: number
+          model?: string
+          temperature?: number
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          instructions?: string
+          max_output_tokens?: number
+          model?: string
+          temperature?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_sources: {
+        Row: {
+          content: string | null
+          created_at: string
+          enabled: boolean
+          file_url: string | null
+          id: string
+          kind: string
+          project_id: string | null
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          content?: string | null
+          created_at?: string
+          enabled?: boolean
+          file_url?: string | null
+          id?: string
+          kind?: string
+          project_id?: string | null
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          content?: string | null
+          created_at?: string
+          enabled?: boolean
+          file_url?: string | null
+          id?: string
+          kind?: string
+          project_id?: string | null
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_sources_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       brokers: {
         Row: {
           brokerage: string | null

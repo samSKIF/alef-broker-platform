@@ -2,5 +2,5 @@
 // must be deep-imported by server consumers
 // (see PRD §12 — "client-safe feature index" convention).
 
-export { onboardBroker } from "./actions";
+export { continueAsDemoBroker, onboardBroker } from "./actions";
 export type { Broker, BrokerCreateInput } from "./types";

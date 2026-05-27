@@ -616,8 +616,49 @@ analytics, native app wrappers, AWS migration for video/scale.
 - **[27 May 2026]** **Engagement score is stored, not recomputed.** The
   Activity dashboard reads `brokers.engagement_score` as a static column
   for Phase 1; live recompute via the PRD §8.8 formula is Phase 2.
+- **[27 May 2026]** **Config-driven AI (Ask Alef).** The assistant is NOT
+  hardcoded. Two new tables hold its behaviour:
+  - `ai_config` — singleton "default" row carrying `instructions`,
+    `model`, `temperature`, `max_output_tokens`, `updated_at`.
+  - `ai_sources` — knowledge corpus, one row per brochure / doc / note,
+    with `enabled`, `sort_order`, optional `project_id` FK, `content`
+    and optional `file_url`.
+  The `/api/ask-alef` route loads both at request time, so the admin
+  AI Training screen (1.5.8) can edit instructions or add knowledge
+  sources without redeploying. Seed: one ai_config "default" row + 4
+  ai_sources brochure entries (Hayyan, Al Mamsha, Olfah, Palace
+  Residences).
+- **[27 May 2026]** **OpenAI defaults.** `gpt-4o-mini` (cheapest current
+  OpenAI model — ~$0.15/$0.60 per million in/out tokens), temperature
+  0.4, `max_completion_tokens` 600. All editable from `ai_config`.
+- **[27 May 2026]** **AI grounding posture.** Per PRD §9 we keep Phase 1
+  simple — full source text is concatenated into the system prompt at
+  request time. Vector / embeddings RAG is deferred to Phase 2
+  (PROJECT_PLAN 2.5). Comfortable for ~4 KB of brochure text today.
+- **[27 May 2026]** **Streaming wire format.** `/api/ask-alef` returns
+  raw delta text as `Content-Type: text/plain; charset=utf-8` chunked
+  body (not SSE). Client uses `fetch` + a `ReadableStream` reader; the
+  in-flight assistant bubble re-renders per chunk.
+- **[27 May 2026]** **/ask-alef sits OUTSIDE the (broker)(app) layout.**
+  The chat's own bottom input bar would clash with the floating tab
+  bar; the chat is a full-screen surface with a back link to /home. The
+  `AskAlefFAB` on /home is what opens it.
+- **[27 May 2026]** **Demo affordance on /welcome.** A POC-only "Demo ·
+  Continue as Layla Hassan" form button calls the
+  `continueAsDemoBroker` server action, which sets the `broker_id`
+  cookie to `b1` and redirects to /home. Clearly labelled so a real
+  broker doesn't tap it by accident. Replaces the previously-broken
+  "Already enrolled? Sign in" link on /welcome.
+- **[27 May 2026]** **New admin task: 1.5.8 AI Training.** Edit the AI's
+  instructions, model knobs, and the `ai_sources` library (add / edit /
+  toggle / delete; optional file upload that extracts text into a
+  source row). Added to PROJECT_PLAN under section 1.5.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
-- _[open]_ Which 3–4 projects' brochures are indexed for the AI at launch.
+- _[open]_ Which 3–4 projects' brochures are indexed for the AI at
+  launch — Phase 1 seed uses all 4 indexed projects from the seed
+  data (Hayyan, Al Mamsha, Olfah, Palace Residences). Replace the
+  derived brochure text with the actual brochure PDFs once Alef hands
+  them over (via the AI Training screen).
 
 ---
 
