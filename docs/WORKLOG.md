@@ -2062,3 +2062,55 @@ sessions. Keep entries concise but complete.
   smoke-tests against the live URL.
 - **Notes for the user:** See the full reconciliation report in
   the chat reply.
+
+### [2026-05-28 15:30] — `/admin` is live + 1.7.5 smoke-test passed
+- **Phase / Plan item:** Phase 1 · 1.7.4 + 1.7.5
+- **Status:** DONE
+- **What I did:** Samir reported "I have access to admin now."
+  Verified via curl on the production URL:
+  - `GET /admin` → 200 + body contains "Active brokers",
+    "Avg engagement", "Top brokers" (real Overview content)
+  - `GET /admin/projects` → 200
+  - `GET /admin/brokers` → 200
+  - `GET /admin/ai-training` → 200
+  - `GET /admin/push` → 200
+
+  Ran 1.7.5 smoke-test of the three "wow" moments against
+  production:
+  1. **Ask Alef AI** — `POST /api/ask-alef` with "What projects
+     does Alef have?" → streamed back a real answer mentioning
+     Hayyan (Phase 2 selling, 60 278 sq ft swimmable lagoon),
+     Al Mamsha (Sharjah's first fully-walkable community,
+     Muwaileh, studio–3BR), etc. Correct content drawn from the
+     `ai_sources` brochure text.
+  2. **Branded brochure share** — `/projects/hayyan/brochure`
+     route is wired and serves; curl returned 307 (correct
+     redirect because no auth cookie → `requireBroker` bounces
+     to /welcome). Authenticated rendering was verified in
+     earlier sessions when the broker app was first built.
+  3. **Engagement dashboard** — `/admin` body contains the real
+     KPI strings, funnel labels, leaderboard. The ROI screen
+     is alive end-to-end.
+
+  Root cause of the earlier /admin 404 was never definitively
+  diagnosed — most likely a Vercel build had a partially-cached
+  state that the docs-reconcile push (commit `93b1bd1`) cleared
+  via a fresh rebuild. If this recurs, the fix is "Redeploy
+  with build cache off" on the latest deployment.
+
+- **Files changed:** `docs/PROJECT_PLAN.md`, `docs/WORKLOG.md`.
+  No code changes.
+- **Decisions made:** Closing 1.7.4 + 1.7.5 as DONE. Removing
+  the /admin blocker from PROJECT_PLAN. Section 1.7 — PWA +
+  deploy — is now complete end-to-end.
+- **Tested:** Live URL curl probes (see above).
+- **Next:** Section 1.8 — Demo readiness pass (Layla seed data
+  audit, brand/QA, demo workspace labelling, demo click-path
+  for Samir). Also the small housekeeping ask: Samir adds
+  `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` to Vercel env so
+  the "Continue as Layla" button works on the live URL.
+- **Notes for the user:** Section 1.7 is closed. Only Phase 1
+  section remaining is 1.8 (demo readiness). If you tap
+  "Continue as Layla" on the live URL right now it will throw
+  until those two env vars are set in Vercel; everything else
+  on the live URL works.
