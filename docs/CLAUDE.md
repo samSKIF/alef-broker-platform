@@ -109,8 +109,10 @@ Next.js (App Router, TypeScript) · Tailwind CSS · Supabase (Postgres, Storage,
 Realtime) · OpenAI API · GitHub · deployed on Vercel.
 
 - Broker app = `/app/(broker)` · Admin = `/app/(admin)`.
-- Backend posture: **hybrid** — real Supabase DB, but **dummy-account
-  onboarding** (no real login) for the POC.
+- Backend posture: real Supabase DB + **real Supabase Auth (email + password)**.
+  Phase 2 item 2.1 was brought forward 28 May. `auth.users` linked to
+  `brokers.user_id`. Middleware auto-refreshes JWT cookies. RERA card
+  verification and RLS hardening still Phase 2 (items 2.1 second-half / 2.7).
 - Do NOT introduce new frameworks/services without updating PRD §2 and asking.
 
 **Repo is FEATURE-FIRST (vertical slices) — see the full tree in PRD §2:**

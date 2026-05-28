@@ -13,7 +13,7 @@
 
 > _Claude Code: overwrite this line each session._
 
-**Phase 1 · sections 1.0–1.6 + 1.7.1 done. PROJECT_PLAN 2.1 (real broker auth) brought forward from Phase 2: Supabase Auth replaces the dummy `broker_id` cookie. New `/signup` (email + password + confirm) → `/onboarding/name` (profile capture, now writes broker row linked to auth.users.id) → `/onboarding/done` → `/home`. New `/login` for returning brokers. "Continue as Layla" still works via a real provisioned auth account (creds in env). Sign-out button at the bottom of /activity. Middleware auto-refreshes the JWT cookie on every navigation. All 13 broker-app pages migrated from `getBrokerIdFromCookie` to `requireBroker` / `getCurrentBroker`; the old `lib/dummy-account.ts` is deleted. Build + TypeScript clean. 55 / 55 functional Phase-1 items done + 2.1 closed. **BLOCKED on Samir** for 1.7.2–1.7.4 (Vercel `/admin` 404 still under diagnosis) and one task for Samir: add `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` to Vercel env so the live deploy's demo button works.**
+**Live at `https://alef-broker-platform.vercel.app` (reconciled 2026-05-28). Phase 1 sections 1.0–1.6 done; 1.7 partial (broker app deployed, `/admin/*` returns 404 in production despite being in the build — open issue). Phase 2 item 2.1 (real broker auth) brought forward and shipped: Supabase Auth email+password, `/signup`, `/login`, `/profile` editor, sign-out, middleware-auto-refreshed JWT cookies, "Continue as Layla" backed by a real provisioned auth account. AI scope expanded to projects + training + campaigns + per-broker points/tier (live per-request injection). Avatar `photo_url` plumbed through every render. 13 broker pages migrated from `getBrokerIdFromCookie` → `requireBroker`. ~14 fixes shipped (iOS auto-zoom, mobile keyboard viewport, signup-loop email-confirmation bypass, GoTrue singleton, etc.). RLS still off on all 8 tables (Phase 2 item 2.7). **OPEN:** (1) `/admin/*` 404 in production; (2) `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` not yet set in Vercel env; (3) 1.7.5 live smoke-test pending on (1).**
 
 ---
 
@@ -62,7 +62,8 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.3.12 Booking — `/booking` form (project picker, native date input, time-slot grid, reminder toggle) submits via the `submitBooking` server action which writes `visit_booked` activity and redirects.
 - [x] 1.3.13 Booking confirmation — `/booking/confirmation?project=…&date=…&time=…` ticket screen with project/location/date/time and an activity log nudge.
 - [x] 1.3.14 In-app notification feed — `/notifications` lists sent notifications via `NotificationRow`. Bell badge in `AppHeader` shows `countSentNotifications` from the layout.
-- [x] 1.3.15 Activity dashboard — `/activity` with `EngagementRing` SVG (renders broker.engagement_score 0–100), breakdown bars (visits/shares/modules vs target ceilings), 3 stat tiles, and a recent-activity timeline that joins project + module names client-side.
+- [x] 1.3.15 Activity dashboard — `/activity` with `EngagementRing` SVG (renders broker.engagement_score 0–100), breakdown bars (visits/shares/modules vs target ceilings), 3 stat tiles, and a recent-activity timeline that joins project + module names client-side. (28 May: a quiet "Sign out" link added to the bottom of this page after real auth landed.)
+- [x] 1.3.16 Profile editor at `/profile` — **added post-deploy (28 May)** as a follow-up to real auth (Phase 2 item 2.1 brought forward). Tap the avatar in `AppHeader` → `/profile` shows email read-only, editable name/role/brokerage, photo picker with "Remove photo" affordance, and a Sign-out link. `updateBrokerProfile` server action updates the broker row + uploads new photo + revalidates every avatar-bearing path. Avatar `photo_url` plumbed through every render (AppHeader, /activity snapshot, /onboarding/done, brochure share preview + footer, admin BrokerRosterTable, admin brokers/[id], admin Overview Leaderboard) so an uploaded photo shows up network-wide.
 
 ### 1.4 — Ask Alef AI assistant
 - [x] 1.4.1 OpenAI API key in `.env.local`; validated against `/v1/chat/completions` (HTTP 200, `gpt-4o-mini` reply).
@@ -92,11 +93,12 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 - [x] 1.6.6 End-to-end test of the full round-trip — see WORKLOG verification report. SQL probes inserted + removed cleanly; `npx tsc --noEmit` + `npx next build` both pass; 34 routes compile.
 
 ### 1.7 — PWA + deploy
-- [x] 1.7.1 PWA manifest, app icons, service worker, offline shell — `app/manifest.ts` (name, short_name, navy theme, beige background, standalone display, 192/512/maskable icons), `app/icon.tsx` (32px favicon), `app/apple-icon.tsx` (180px iOS), `app/icon0.tsx` (192px PWA), `app/icon1.tsx` (512px any+maskable PWA) — all generated programmatically via `next/og` ImageResponse. `public/sw.js` precaches `/offline` and intercepts failed navigations with the cached shell. `<ServiceWorkerRegister>` client component (mounted in root `app/layout.tsx`) calls `navigator.serviceWorker.register('/sw.js')` on mount. Root metadata exports `appleWebApp.capable=true` + viewport `themeColor=#333F48` so iOS Safari drops the chrome on the home-screen install.
-- [!] 1.7.2 Connect GitHub repo to Vercel — BLOCKED on Samir (account + auth flow). Step-by-step guide in WORKLOG entry [2026-05-27].
-- [!] 1.7.3 Configure env vars on Vercel — BLOCKED on Samir (paste 4 secrets into Vercel dashboard, NOT into chat). Required: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`. **NOTE:** The session task message listed `NEXT_PUBLIC_SUPABASE_ANON_KEY` but the codebase actually reads `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` (per PRD §12 decision 27 May).
-- [!] 1.7.4 Deploy; verify the live URL on mobile + desktop — BLOCKED on Samir kicking the first build. After deploy I will run smoke-tests against the live URL.
-- [ ] 1.7.5 Smoke-test the 3 "wow" moments: AI · branded brochure · engagement dashboard
+- [x] 1.7.1 PWA manifest, app icons, service worker, offline shell — `app/manifest.ts` (name, short_name, navy theme, beige background, standalone display, 192/512/maskable icons), `app/icon.tsx` (32px favicon — constructed copper "A"), `app/apple-icon.tsx` (180px iOS), `app/icon0.tsx` (192px PWA), `app/icon1.tsx` (512px any+maskable PWA) — the three home-screen sizes embed the real Alef wordmark (`/public/logo-dark.png`) on navy; favicon stays a constructed letterform (illegible at 32px). `public/sw.js` precaches `/offline` and intercepts failed navigations with the cached shell. `<ServiceWorkerRegister>` client component (mounted in root `app/layout.tsx`) calls `navigator.serviceWorker.register('/sw.js')` on mount. Root metadata exports `appleWebApp.capable=true` + viewport `themeColor=#333F48` so iOS Safari drops the chrome on the home-screen install.
+- [x] 1.7.2 Connect GitHub repo to Vercel — Samir connected `samSKIF/alef-broker-platform` to a Vercel project. Auto-deploys on push to `main`. Production URL: `alef-broker-platform.vercel.app`.
+- [~] 1.7.3 Configure env vars on Vercel — **4 of 6 set.** Present: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`. **Missing:** `DEMO_BROKER_EMAIL`, `DEMO_BROKER_PASSWORD` (added 28 May for the "Continue as Layla" demo path — without them the demo button on `/welcome` will throw at runtime). Samir to add via Vercel → Project Settings → Environment Variables → all three env checkboxes → redeploy with cache off.
+- [~] 1.7.4 Deploy; verify the live URL on mobile + desktop — Broker side ✅ verified: `/`, `/welcome`, `/signup`, `/login`, `/profile`, `/manifest.webmanifest` all return 200; PWA installs cleanly; signup → onboarding → home flow works end-to-end with real Supabase Auth. **Admin side ❌ outstanding:** every `/admin/*` URL returns HTTP 200 but the body is Next.js's "This page could not be found" page. Local `next build` lists all 16 admin routes; live build serves them as the 404 template. Root cause unknown; Vercel build logs not yet inspected.
+- [!] 1.7.5 Smoke-test the 3 "wow" moments: AI · branded brochure · engagement dashboard — blocked on 1.7.4 admin issue. AI + branded brochure can be tested today (broker-side); engagement dashboard requires `/admin` to render.
+- [x] 1.7.6 Post-deploy polish (27–28 May): (a) mobile chat UX — `PhoneShell` switched to `h-dvh` so iOS keyboard shrinks viewport correctly + safe-area padding on chat input + centered empty-state suggestion chips; (b) iOS auto-zoom fix — bumped chat textarea + booking project/date inputs to ≥16px to disable Safari's auto-zoom-on-focus; (c) Memoised browser Supabase client to silence "Multiple GoTrueClient instances" warning; (d) `/onboarding/done` starter cards wrapped in `<Link>` (were dead clicks); (e) `/onboarding/name` back-filled with the optional profile-photo field PRD §6.3 specified but 1.3.3 omitted; (f) Real Alef wordmark embedded in `apple-icon` / `icon0` / `icon1` (initial commit had Satori-rendering bug — fixed); (g) Signup loop fix — `signUpBroker` switched to service-role `admin.createUser({email_confirm:true})` to bypass Supabase's "Confirm email" project toggle; (h) Stranded unconfirmed users hot-patched in DB.
 
 ### 1.8 — Demo readiness
 - [ ] 1.8.1 Pre-seed the dummy broker account ("Layla Hassan") with rich activity
@@ -250,14 +252,27 @@ with a real database, the admin→app round-trip, and the Ask Alef AI assistant.
 ## BLOCKERS
 > Claude Code: list anything blocked and what's needed to unblock.
 
-- **[2026-05-27] 1.7.2 – 1.7.4 — Vercel deploy.** Needs Samir to (a)
-  sign in to Vercel with the same GitHub identity that owns
-  `samSKIF/alef-broker-platform`, (b) "Add New… → Project" → import the
-  repo (Next.js + Tailwind auto-detected), (c) paste the four env
-  vars (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`,
-  `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`) into the Vercel
-  Environment Variables panel (NOT into chat), (d) hit Deploy. Once
-  the build is green I'll smoke-test the live URL.
+- **[2026-05-28] `/admin/*` returns 404 in production.** Live Vercel
+  build serves the Next.js "This page could not be found" template for
+  every admin URL even though local `next build` lists all 16 admin
+  routes (verified 28 May from the latest deployment, commit `86ec4a2`,
+  status Ready, 33s build). Symptoms: HTTP 200 + correct
+  `X-Matched-Path: /admin` header + 404-body HTML. Hypothesis: a
+  Vercel-side build config (root dir, build command, output dir)
+  silently filters the `(admin)` route group, OR the deployed bundle
+  is from an older commit despite Vercel showing `86ec4a2`. **Unblock
+  path:** screenshot or paste of the latest deployment's full Build
+  Logs → search the route table for `/admin`. If present, it's a
+  runtime routing bug; if absent, it's a build-time include/exclude.
+- **[2026-05-28] Demo env vars missing on Vercel.** `DEMO_BROKER_EMAIL`
+  and `DEMO_BROKER_PASSWORD` (introduced 28 May with the real-auth
+  swap) are in `.env.local` but not yet in Vercel. Without them the
+  "Continue as Layla" button on the live `/welcome` will throw when
+  tapped. Add via Vercel → Project Settings → Environment Variables;
+  tick all three env checkboxes; redeploy with cache off.
+- **[2026-05-28] 1.7.5 live smoke-test pending.** AI + branded
+  brochure can be tested today on the broker side. Engagement
+  dashboard depends on the `/admin` 404 above.
 
 ### Outstanding follow-ups (do NOT block 1.6)
 - **[2026-05-27] RLS hardening (PROJECT_PLAN 2.7).** All public tables (now 8 with `ai_config` + `ai_sources`) have Row Level Security **disabled**. Intentional POC posture per PRD §11; remediation owned by Phase 2 item 2.7. Note `ai_config` and `ai_sources` need particular care since they store the system prompt — must be admin-only writable in production.

@@ -1993,3 +1993,72 @@ sessions. Keep entries concise but complete.
   2. **Layla's avatar** stays as initials until you upload one
      from /profile signed-in as her. She has no `photo_url` in
      the seed. Same for the other 7 seeded brokers.
+
+### [2026-05-28 15:00] — Status reconcile (docs only, no code)
+- **Phase / Plan item:** Cross-cutting — Phase 1.7 status sweep
+- **Status:** DONE
+- **What I did:** Read the full PRD / PROJECT_PLAN / WORKLOG + every
+  prior WORKLOG entry, probed the live Vercel URL, listed the
+  Supabase schema, then swept the docs to match deployed reality.
+  No code changes — doc updates only.
+
+  **Live URL probes (`alef-broker-platform.vercel.app`):**
+  - `/` → 200 (redirects through splash to /welcome)
+  - `/welcome` → 200
+  - `/signup` → 200
+  - `/login` → 200
+  - `/profile` → 307 (unauth redirect — correct)
+  - `/manifest.webmanifest` → 200
+  - `/admin` → 200 status + "This page could not be found" body
+    (Next.js 404 template) — **OPEN ISSUE**
+
+  **DB schema verified (8 public tables, all RLS off):**
+  - `projects` 15 cols (4 rows), `campaigns` 10 cols (5 rows),
+  - `modules` 13 cols (7 rows), `brokers` 10 cols (16 rows,
+    incl. test signups), `notifications` 8 cols (1 row),
+  - `activity` 7 cols (446 rows), `ai_config` 6 cols (1 row),
+  - `ai_sources` 10 cols (5 rows).
+  - `brokers.user_id uuid → auth.users.id` (real-auth FK)
+    confirmed present.
+
+  **Doc updates applied:**
+  - `PROJECT_PLAN.md`: rewrote Current Status line; ticked
+    1.7.2 ✅, marked 1.7.3 ~ (4 of 6 env vars), marked 1.7.4 ~
+    (broker side ✅, admin side ❌), marked 1.7.5 [!] BLOCKED.
+    Added new line items 1.3.16 (profile editor) and 1.7.6
+    (post-deploy polish bundle) so the work that landed but
+    wasn't formally in the plan structure is now reflected.
+    Rewrote BLOCKERS section with the 3 current blockers.
+  - `PRD.md`: §2 Auth row changed from "Hybrid — dummy account
+    for POC" to "Supabase Auth (email + password)". §2 features
+    tree updated /brokers blurb. §4 Broker flow rewritten to
+    include Signup/Login + Profile editor. §12 reconciliation
+    entry appended (left the 26 May "dummy-account" entry intact
+    as a historical record — the 28 May real-auth entry already
+    supersedes it).
+  - `CLAUDE.md` (both root and `docs/`): §4 backend-posture line
+    updated to match.
+- **Files changed:**
+  - `docs/PROJECT_PLAN.md`, `docs/PRD.md`, `docs/WORKLOG.md`
+  - `CLAUDE.md` (root), `docs/CLAUDE.md`
+- **Decisions made:**
+  - **Keep 26 May "dummy-account" decision in PRD §12 history.**
+    Decisions log is append-only by convention; superseding
+    entries (28 May real-auth) carry the new truth, the old
+    entry stays as the historical record. Avoids rewriting
+    history.
+  - **Promote `/profile` editor + post-deploy polish into the
+    plan structure** as 1.3.16 + 1.7.6 rather than leaving them
+    only in WORKLOG + DISCOVERED ITEMS. Plan should let any
+    reader see what's actually shipped without cross-referencing
+    the worklog.
+- **Tested:** Doc-only changes — no build needed. Cross-checked
+  PRD §2/§4 + both CLAUDE.md files for any remaining
+  "dummy-account" / "no real login" wording — none found.
+- **Next:** Wait for Samir to (a) add `DEMO_BROKER_EMAIL` +
+  `DEMO_BROKER_PASSWORD` to Vercel env and redeploy, and (b)
+  share Vercel Build Logs for the latest deployment so I can
+  diagnose the `/admin/*` 404. Once /admin works, run 1.7.5
+  smoke-tests against the live URL.
+- **Notes for the user:** See the full reconciliation report in
+  the chat reply.

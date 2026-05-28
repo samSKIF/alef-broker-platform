@@ -39,7 +39,7 @@ the app *is* the data.
 | Styling | **Tailwind CSS** | Design tokens mapped from the Alef brand (see §5) |
 | PWA | **Next.js PWA** (manifest + service worker) | Installable; offline shell. Real push = Phase 2 |
 | Database | **Supabase (Postgres)** | Single source of truth; tables map to the data model in §8 |
-| Auth | **Hybrid — dummy account for POC.** Supabase Auth wired but not enforced | Real broker login = Phase 2 |
+| Auth | **Supabase Auth (email + password).** Phase 2 item 2.1 was brought forward 28 May — see §12. `auth.users` linked to `public.brokers.user_id`; middleware auto-refreshes the JWT cookie. RERA card verification still Phase 2. |
 | File storage | **Supabase Storage** | Project images, brochure PDFs, training videos |
 | AI assistant | **OpenAI API** | "Ask Alef" — grounded in indexed Alef brochures |
 | Realtime | **Supabase Realtime** | Powers the admin→app live update / in-app notifications |
@@ -70,7 +70,7 @@ campaign code lives in one place: `/features/campaigns`.
   /projects          → project authoring (admin) + browsing/detail (broker)
   /campaigns         → "Alef · this week" carousel: author (admin) + display (broker)
   /training          → Academy: modules, quiz builder, tier logic
-  /brokers           → roster + profiles (admin) + dummy-account onboarding (broker)
+  /brokers           → roster + profiles (admin) + real-auth signup/login/profile (broker)
   /booking           → site-visit booking + confirmation
   /brochures         → branded brochure share
   /notifications     → push composer (admin) + in-app feed (broker)
@@ -131,8 +131,10 @@ and is provided in the handoff bundle. It contains:
 ## 4. Users & primary flows
 
 ### Broker (mobile)
-Splash → Welcome → Name capture (dummy account) → Home → {Academy, Projects,
-Brochure share, Booking, Activity, Ask Alef AI}.
+Splash → Welcome → (Signup OR Login) → Name capture (profile) → Home → {Academy,
+Projects, Brochure share, Booking, Activity, Ask Alef AI, Profile editor}.
+Returning brokers skip name-capture if a profile already exists. "Continue as
+Layla" demo path signs in as a pre-provisioned auth account.
 
 ### Admin (desktop)
 Overview/metrics → {Brokers roster, Projects authoring, Academy authoring,
@@ -842,6 +844,15 @@ analytics, native app wrappers, AWS migration for video/scale.
   stale immediately. Browser cache is good enough for the POC. Real
   web-push registration (PRD §7.6 Phase 2) will add `push` /
   `notificationclick` listeners to this same SW file.
+- **[28 May 2026]** **Docs reconciliation.** Status + reconcile session
+  swept the docs to match deployed reality: PRD §2 Auth row updated from
+  "Hybrid — dummy account for POC" to "Supabase Auth (email + password)";
+  §2 features tree updated `/brokers` blurb from "dummy-account
+  onboarding" to "real-auth signup/login/profile"; §4 Broker flow
+  rewritten to include Signup/Login + Profile editor; root and docs
+  copies of `CLAUDE.md` §4 updated likewise. The 26 May "dummy-account"
+  decision row earlier in §12 is left intact as a historical record —
+  the 28 May real-auth entry already supersedes it.
 - _[open]_ Final engagement-score weights — to be refined with Alef.
 - _[open]_ Which 3–4 projects' brochures are indexed for the AI at
   launch — Phase 1 seed uses all 4 indexed projects from the seed
