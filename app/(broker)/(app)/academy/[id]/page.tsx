@@ -32,7 +32,11 @@ export default async function ModuleDetailPage({
 
   return (
     <>
-      <AppHeader brokerName={broker.name} notificationCount={notifCount} />
+      <AppHeader
+        brokerName={broker.name}
+        brokerPhotoUrl={broker.photo_url}
+        notificationCount={notifCount}
+      />
       <div className="px-5 pt-1">
         <Link
           href="/academy"

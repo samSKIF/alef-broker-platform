@@ -68,7 +68,11 @@ export default async function ActivityPage() {
 
   return (
     <>
-      <AppHeader brokerName={broker.name} notificationCount={notifCount} />
+      <AppHeader
+        brokerName={broker.name}
+        brokerPhotoUrl={broker.photo_url}
+        notificationCount={notifCount}
+      />
 
       <div className="px-5 pb-3 pt-1">
         <div className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-accent">
@@ -85,7 +89,12 @@ export default async function ActivityPage() {
           <div className="flex items-center gap-4">
             <EngagementRing score={broker.engagement_score} size={132} />
             <div className="min-w-0 flex-1">
-              <Avatar name={broker.name} size={48} className="mb-3" />
+              <Avatar
+                name={broker.name}
+                src={broker.photo_url}
+                size={48}
+                className="mb-3"
+              />
               <div className="text-[15px] font-bold leading-tight text-ink">
                 {broker.name}
               </div>

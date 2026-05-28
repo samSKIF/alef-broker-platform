@@ -115,7 +115,7 @@ export function BrochureShareClient({
               Personalised with
             </div>
             <div className="flex items-center gap-3">
-              <Avatar name={broker.name} size={44} />
+              <Avatar name={broker.name} src={broker.photo_url} size={44} />
               <div className="min-w-0 flex-1">
                 <div className="text-[14px] font-bold text-ink">
                   {broker.name}
@@ -275,7 +275,7 @@ function BrochurePreview({
 
       {/* Broker footer (the personalised bit) */}
       <div className="flex items-center gap-2.5 bg-ink px-3.5 py-3 text-white">
-        <Avatar name={broker.name} size={32} />
+        <Avatar name={broker.name} src={broker.photo_url} size={32} />
         <div className="min-w-0 flex-1">
           <div className="text-[11.5px] font-bold leading-none">
             {broker.name}

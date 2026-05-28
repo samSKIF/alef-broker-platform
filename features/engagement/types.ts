@@ -49,6 +49,7 @@ export type LeaderboardBroker = {
   tier: string;
   points: number;
   engagement_score: number;
+  photo_url: string | null;
 };
 
 export type AdminOverview = {

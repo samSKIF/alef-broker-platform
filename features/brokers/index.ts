@@ -9,6 +9,7 @@ export {
   signInBroker,
   signOutBroker,
   signUpBroker,
+  updateBrokerProfile,
 } from "./actions";
 export {
   TIERS,

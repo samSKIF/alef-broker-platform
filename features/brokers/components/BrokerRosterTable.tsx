@@ -55,7 +55,7 @@ export function BrokerRosterTable({
                   href={`/admin/brokers/${b.id}`}
                   className="flex items-center gap-3"
                 >
-                  <Avatar name={b.name} size={32} />
+                  <Avatar name={b.name} src={b.photo_url} size={32} />
                   <div className="min-w-0">
                     <div className="font-semibold text-ink">{b.name}</div>
                     {b.brokerage && (

@@ -31,7 +31,11 @@ export default async function ProjectsPage() {
 
   return (
     <>
-      <AppHeader brokerName={broker.name} notificationCount={notifCount} />
+      <AppHeader
+        brokerName={broker.name}
+        brokerPhotoUrl={broker.photo_url}
+        notificationCount={notifCount}
+      />
 
       <div className="px-5 pb-4 pt-1">
         <div className="mb-1 text-[12px] font-bold uppercase tracking-[0.13em] text-accent">

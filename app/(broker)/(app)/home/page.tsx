@@ -46,7 +46,11 @@ export default async function HomePage() {
 
   return (
     <>
-      <AppHeader brokerName={broker.name} notificationCount={notifCount} />
+      <AppHeader
+        brokerName={broker.name}
+        brokerPhotoUrl={broker.photo_url}
+        notificationCount={notifCount}
+      />
 
       {/* Greeting */}
       <div className="px-5 pb-4 pt-1">

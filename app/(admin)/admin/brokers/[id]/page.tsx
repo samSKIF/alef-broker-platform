@@ -107,7 +107,12 @@ export default async function AdminBrokerDetailPage({
         {/* Identity column */}
         <Card pad={22}>
           <div className="flex flex-col items-center text-center">
-            <Avatar name={broker.name} size={84} className="mb-3" />
+            <Avatar
+              name={broker.name}
+              src={broker.photo_url}
+              size={84}
+              className="mb-3"
+            />
             <div className="text-[18px] font-bold text-ink">{broker.name}</div>
             {broker.brokerage && (
               <div className="mt-0.5 text-[13px] text-ink-3">

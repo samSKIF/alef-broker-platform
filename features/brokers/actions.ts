@@ -199,3 +199,80 @@ export async function onboardBroker(formData: FormData): Promise<void> {
   revalidatePath("/admin/brokers");
   redirect("/onboarding/done");
 }
+
+// ---------------------------------------------------------------------
+// Profile edit — same fields as onboarding (name / role / brokerage /
+// photo) but for a broker who already has a row. Tapped from the
+// avatar in AppHeader; lives at /profile. Revalidates every path
+// where the avatar / name appear so the new photo shows up
+// everywhere on the next paint.
+// ---------------------------------------------------------------------
+export async function updateBrokerProfile(formData: FormData): Promise<void> {
+  const sb = await createSupabaseSessionClient();
+  const {
+    data: { user },
+  } = await sb.auth.getUser();
+  if (!user) redirect("/login");
+
+  const name = ((formData.get("name") as string) || "").trim();
+  const brokerage = ((formData.get("brokerage") as string) || "").trim();
+  const role = ((formData.get("role") as string) || "").trim();
+  if (!name || !brokerage || !role) {
+    throw new Error("Name, brokerage and role are all required.");
+  }
+
+  const admin = createSupabaseServerClient();
+
+  // Look up the existing broker so we know whether to keep or replace
+  // the photo. Empty file inputs come through as a 0-byte File.
+  const { data: existing } = await admin
+    .from("brokers")
+    .select("id, photo_url")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!existing) {
+    // No profile yet → bounce to onboarding instead of silently creating
+    // (this keeps /profile a strict UPDATE endpoint).
+    redirect("/onboarding/name");
+  }
+
+  let photoUrl: string | null = existing.photo_url;
+  const photoEntry = formData.get("photo");
+  if (photoEntry instanceof File && photoEntry.size > 0) {
+    photoUrl = await uploadToStorage("broker-photos", photoEntry);
+  }
+  // "Remove photo" affordance: a hidden input named "clear_photo" with
+  // value "1" tells us to drop the current photo without uploading
+  // a new one.
+  if ((formData.get("clear_photo") as string | null) === "1") {
+    photoUrl = null;
+  }
+
+  const { error } = await admin
+    .from("brokers")
+    .update({
+      name,
+      brokerage,
+      role,
+      photo_url: photoUrl,
+    })
+    .eq("id", existing.id);
+  if (error) throw error;
+
+  // Avatar appears on every broker-app screen via AppHeader, plus the
+  // admin roster + drill-down + leaderboard. Force-dynamic pages
+  // re-fetch on nav, but explicit revalidate makes the change visible
+  // on /home immediately when the user hits "Save" + we redirect there.
+  revalidatePath("/home");
+  revalidatePath("/projects");
+  revalidatePath("/academy");
+  revalidatePath("/activity");
+  revalidatePath("/booking");
+  revalidatePath("/notifications");
+  revalidatePath("/profile");
+  revalidatePath("/admin");
+  revalidatePath("/admin/brokers");
+  revalidatePath(`/admin/brokers/${existing.id}`);
+
+  redirect("/home");
+}

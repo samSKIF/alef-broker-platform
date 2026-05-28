@@ -1891,3 +1891,105 @@ sessions. Keep entries concise but complete.
      comes from the actual DB tables — anything you author in
      `/admin/academy` or `/admin/campaigns` is immediately in
      scope for the AI's answers.
+
+### [2026-05-28 14:00] — Profile editor + avatar plumbed everywhere
+- **Phase / Plan item:** Phase 1 follow-up (post-2.1 polish)
+- **Status:** DONE
+- **What I did:** Two related fixes Samir asked for:
+
+  **(1) Avatar photo wasn't showing anywhere except the seeded
+  brokers' DB rows.** The `Avatar` shared primitive accepted a
+  `src` prop but nobody was passing it — `AppHeader`, /activity
+  snapshot, /onboarding/done, brochure share preview, admin
+  roster + drill-down + leaderboard all rendered initials even
+  when a photo was uploaded at onboarding. Plumbed
+  `broker.photo_url` through every caller:
+  - `AppHeader` new `brokerPhotoUrl` prop, wraps the avatar in
+    `<Link href="/profile">` so it's tappable.
+  - 6 broker-app pages updated to pass `brokerPhotoUrl`.
+  - `Avatar src={broker.photo_url}` on:
+    - `/activity` page snapshot card
+    - `/onboarding/done` welcome avatar
+    - `BrochureShareClient` (preview card + share footer)
+    - admin `BrokerRosterTable` row
+    - admin `brokers/[id]` drill-down identity card
+    - admin overview `Leaderboard`
+  - `LeaderboardBroker` type + the underlying
+    `getAdminOverview` query updated to select `photo_url`.
+
+  **(2) New `/profile` editor.** Tapping the avatar in
+  `AppHeader` now goes to a real broker-app screen at
+  `app/(broker)/(app)/profile/`. Same fields as
+  `/onboarding/name` (name / role / brokerage / photo, FormData
+  wire format) seeded with the broker's current values + email
+  shown read-only. New `updateBrokerProfile` server action:
+  - Reads current auth user → looks up broker row by `user_id`
+  - Uploads new photo to `broker-photos` if changed
+  - Honours a hidden `clear_photo=1` field for "Remove photo"
+  - `UPDATE brokers SET name, brokerage, role, photo_url WHERE id = …`
+  - Revalidates every avatar-bearing path (home/projects/academy/
+    activity/booking/notifications/profile/admin/admin/brokers/
+    admin/brokers/[id])
+  - Redirects back to /home so the broker sees the new avatar
+    immediately
+
+  Sign-out lives on /profile too (in addition to the activity
+  page link) — keeps the profile screen as the canonical
+  "account" surface.
+
+- **Files changed:**
+  - `components/shared/AppHeader.tsx` (Link wrap + brokerPhotoUrl)
+  - new: `app/(broker)/(app)/profile/page.tsx`,
+    `app/(broker)/(app)/profile/_form.tsx`
+  - `features/brokers/actions.ts` (+ updateBrokerProfile)
+  - `features/brokers/index.ts` (re-export)
+  - `features/engagement/types.ts` (LeaderboardBroker.photo_url)
+  - `features/engagement/queries.ts` (select photo_url for the
+    Overview brokers query)
+  - `features/engagement/components/Leaderboard.tsx` (pass src)
+  - `features/brokers/components/BrokerRosterTable.tsx` (pass src)
+  - `features/brochures/components/BrochureShareClient.tsx`
+    (both Avatar usages pass src)
+  - `app/(broker)/(app)/activity/page.tsx` (snapshot Avatar + header)
+  - `app/(broker)/(app)/home/page.tsx` (header)
+  - `app/(broker)/(app)/projects/page.tsx` (header)
+  - `app/(broker)/(app)/academy/page.tsx` (header)
+  - `app/(broker)/(app)/academy/[id]/page.tsx` (header)
+  - `app/(broker)/(app)/booking/page.tsx` (header)
+  - `app/(broker)/onboarding/done/page.tsx` (welcome avatar)
+  - `app/(admin)/admin/brokers/[id]/page.tsx` (identity card)
+  - `docs/PRD.md`, `docs/WORKLOG.md`
+- **Decisions made:**
+  - **/profile is strictly UPDATE.** If a broker hits it without
+    a profile row yet (signed up but bailed onboarding), the
+    action redirects to `/onboarding/name` rather than creating
+    on the fly — keeps the two endpoints' responsibilities
+    distinct.
+  - **Photo state has 3 modes** in the form: keep current
+    (default), upload new (file input), clear ("Remove photo"
+    link sets a hidden `clear_photo` field). All three round-
+    trip through one FormData submit.
+  - **Object URLs revoked carefully.** The preview can be
+    either a `blob:` URL we created or the existing Supabase URL
+    we got from the server. Only the first should be revoked
+    when replaced.
+  - **Old photos stay in Storage.** When a broker uploads a
+    replacement, the previous file is orphaned in
+    `broker-photos`. Cleanup is Phase 2 (small enough to ignore
+    for a POC; admin can mass-delete via Supabase Dashboard).
+- **Tested:**
+  - `npx tsc --noEmit` PASS.
+  - `npx next build` PASS — 41 routes (was 38; `/profile`,
+    `/login`, `/signup` added). Initial build hit a transient
+    Google Fonts fetch error; retry succeeded.
+- **Next:** Push → Vercel auto-deploys. Try the flow live:
+  log in → tap avatar top-right → upload a new photo → Save →
+  land on /home with the new avatar. Same avatar shows in
+  /activity snapshot, brochure-share preview, and admin
+  /admin/brokers + drill-down once admin navigates.
+- **Notes for the user:**
+  1. **No env changes** — the existing `broker-photos` bucket
+     handles the upload; no Vercel config to add.
+  2. **Layla's avatar** stays as initials until you upload one
+     from /profile signed-in as her. She has no `photo_url` in
+     the seed. Same for the other 7 seeded brokers.

@@ -56,7 +56,7 @@ export async function getAdminOverview(): Promise<AdminOverview> {
   const [{ count: activeBrokers }, brokersResp, activityResp] =
     await Promise.all([
       sb.from("brokers").select("*", { count: "exact", head: true }),
-      sb.from("brokers").select("id, name, brokerage, tier, points, engagement_score"),
+      sb.from("brokers").select("id, name, brokerage, tier, points, engagement_score, photo_url"),
       sb.from("activity").select("type, created_at"),
     ]);
 

@@ -221,7 +221,9 @@ Three screens cover sign-up + profile + welcome:
 "Ahlan, [name]" — confirms enrollment as a Bronze broker. Shows first actions.
 
 ### 6.5 Home dashboard — `Phase 1`
-- **Header:** Alef logo, notification bell (with unread badge), broker avatar.
+- **Header:** Alef logo, notification bell (with unread badge), broker
+  avatar (real photo if uploaded, initials fallback). Tap avatar →
+  `/profile` to edit name / role / brokerage / photo or sign out.
 - **Greeting:** date + "Good morning, [name]".
 - **"Alef · this week" carousel:** horizontally scrolling cards (~1.5 visible).
   **Data source:** `campaigns` table, `published = true`, ordered by schedule.
@@ -754,6 +756,26 @@ analytics, native app wrappers, AWS migration for video/scale.
   broker clears their cookie they go through onboarding again — that
   is by-design for the POC.
   **SUPERSEDED 2026-05-28**: real auth brought forward (see below).
+- **[28 May 2026]** **Profile editor at `/profile`.** New broker-app
+  screen reached by tapping the avatar in `AppHeader`. Mirrors the
+  `/onboarding/name` form (same name/role/brokerage/photo fields,
+  same FormData wire format) seeded with the broker's current values
+  + email shown read-only. `updateBrokerProfile` server action does
+  the UPSERT, uploads a new photo to `broker-photos` if changed,
+  honours a "Remove photo" affordance via a hidden `clear_photo`
+  field, and revalidates every path where the avatar surfaces (home,
+  projects, academy, activity, booking, notifications, admin roster
+  + drill-down + leaderboard). Sign-out lives here too (in addition
+  to /activity) so /profile is the one-stop account surface.
+- **[28 May 2026]** **Avatar `photo_url` plumbed through.**
+  `Avatar` already supported a `src` prop but no caller was passing
+  it — broker photos uploaded at onboarding were ignored everywhere.
+  Now `AppHeader` accepts `brokerPhotoUrl` and passes it; same
+  treatment in `/activity` snapshot, `/onboarding/done`, brochure
+  share preview, admin `BrokerRosterTable`, admin
+  `brokers/[id]` drill-down, and the admin overview `Leaderboard`
+  (which needed `LeaderboardBroker` to learn the new column and
+  the underlying query updated to select it).
 - **[28 May 2026]** **Real auth — PROJECT_PLAN 2.1 brought forward**
   into Phase 1 at Samir's request. Email + password via Supabase
   Auth, picked over magic-link / phone-OTP / Google-Apple OAuth

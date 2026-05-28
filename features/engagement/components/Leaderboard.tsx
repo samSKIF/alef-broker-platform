@@ -23,7 +23,7 @@ export function Leaderboard({ brokers }: { brokers: LeaderboardBroker[] }) {
           <div className="w-6 shrink-0 text-center text-[12px] font-bold text-ink-3">
             #{i + 1}
           </div>
-          <Avatar name={b.name} size={36} />
+          <Avatar name={b.name} src={b.photo_url} size={36} />
           <Link
             href={`/admin/brokers/${b.id}`}
             className="min-w-0 flex-1"

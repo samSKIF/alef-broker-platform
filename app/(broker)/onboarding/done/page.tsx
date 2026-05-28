@@ -24,7 +24,7 @@ export default async function OnboardingDonePage() {
         {/* Avatar with copper check badge */}
         <div className="mb-8 flex justify-center">
           <div className="relative">
-            <Avatar name={broker.name} size={108} />
+            <Avatar name={broker.name} src={broker.photo_url} size={108} />
             <div className="absolute -right-1 -bottom-1 flex h-[38px] w-[38px] items-center justify-center rounded-full border-[3px] border-bg bg-accent text-white shadow-accent">
               <Icon name="check" size={20} strokeWidth={2.6} />
             </div>
