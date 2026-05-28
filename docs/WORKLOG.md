@@ -2114,3 +2114,40 @@ sessions. Keep entries concise but complete.
   "Continue as Layla" on the live URL right now it will throw
   until those two env vars are set in Vercel; everything else
   on the live URL works.
+
+### [2026-05-28 16:00] — Status reconcile pass 2 (planning-thread refresh)
+- **Phase / Plan item:** Cross-cutting — status snapshot for a fresh
+  planning thread
+- **Status:** DONE
+- **What I did:** Second reconcile pass (the first was at 15:00,
+  pre-/admin-resolution). Re-read all four docs, re-probed the live
+  URL, re-listed DB row counts. Confirmed the state captured in
+  commit `f46d046` is still accurate — no drift since.
+
+  **Live URL probes (all current):**
+  - Broker: `/`, `/welcome`, `/signup`, `/login` → 200; `/profile`
+    → 307 (correct unauth redirect).
+  - Admin: `/admin`, `/admin/projects`, `/admin/brokers`,
+    `/admin/push`, `/admin/ai-training` all → 200, real content.
+
+  **DB row counts (unchanged):** projects 4, campaigns 5,
+  modules 7, brokers 16 (8 seed + Layla provisioned + 7 test
+  signups), notifications 1, activity 446, ai_config 1,
+  ai_sources 5, auth.users 2.
+
+  **Docs already up to date** from the prior reconcile +
+  /admin close-out (commits `93b1bd1` + `f46d046`):
+  - PROJECT_PLAN current-status line, 1.7.2–1.7.5 ticks,
+    BLOCKERS section all reflect reality.
+  - PRD §2 Auth row, §2 features tree, §4 broker flow, §12
+    history entries all reflect real Supabase Auth.
+  - Both CLAUDE.md files (root + docs/) updated.
+
+- **Files changed:** `docs/WORKLOG.md` only (this entry). No
+  code changes, no other doc changes — nothing else has drifted.
+- **Decisions made:** None.
+- **Tested:** Live URL curl + DB row-count query.
+- **Next:** Section 1.8 (Demo readiness). Optionally Samir adds
+  `DEMO_BROKER_EMAIL` + `DEMO_BROKER_PASSWORD` to Vercel env.
+- **Notes for the user:** See the full report in the chat reply.
+  Nothing actionable from this pass — it's a no-op refresh.
